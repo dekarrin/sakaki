@@ -10,6 +10,9 @@ IDLE_TIMEOUT = 5000
 
 MOVIECOMPLETE = USEREVENT + 1
 
+COLOR_WHITE = pygame.Color(255, 255, 255)
+COLOR_BLACK = pygame.Color(0, 0, 0)
+
 class Touhou(object):
 	def __init__(self):
 		pygame.init()
@@ -76,14 +79,15 @@ class Touhou(object):
 
 	def write_idle_message(self):
 		diff = round((pygame.time.get_ticks() - self.idle_timer) / 1000)
-		remain = diff - round(IDLE_TIMEOUT / 1000)
+		remain = int(round(IDLE_TIMEOUT / 1000) - diff)
 		msg = str(remain) + " seconds until video..."
 		self.write_message(msg)
 
 	def write_message(self, msg):
-		msgSurface = self.msgfont.render(msg, False, pygame.Color(255, 255, 255))
+		msgSurface = self.msgfont.render(msg, False, COLOR_WHITE)
 		msgrect = msgSurface.get_rect()
 		msgrect.topleft = (10, 20)
+		self.window_surface.fill(COLOR_BLACK, msgrect)
 		self.window_surface.blit(msgSurface, msgrect)
 
 game = Touhou()
