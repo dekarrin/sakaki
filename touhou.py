@@ -11,15 +11,14 @@ CONFIG_FILE = 'launcher.cfg'
 MODE_CONTROL = 0
 MODE_VIDEO = 1
 
-IDLE_TIMEOUT = 5000
-
 MOVIECOMPLETE = USEREVENT + 1
 
 COLOR_WHITE = pygame.Color(255, 255, 255)
 COLOR_BLACK = pygame.Color(0, 0, 0)
 
-class Touhou(object):
-	def __init__(self, video_list):
+class TouhouLauncher(object):
+
+	def __init__(self, configuration, video_list):
 		pygame.init()
 		self.clock = pygame.time.Clock()
 		self.window_surface = pygame.display.set_mode(RESOLUTION, pygame.FULLSCREEN)
@@ -30,6 +29,7 @@ class Touhou(object):
 		self.msgfont = pygame.font.Font(pygame.font.get_default_font(), 12)
 		self.videos = video_list
 		self.videos_position = 0
+		self.idle_timeout = configuration['idle_timeout']
 
 	def start(self):
 		while self.running:
@@ -108,53 +108,6 @@ class Touhou(object):
 		if self.videos_position == len(self.videos):
 			self.videos_position = 0
 		return next
-		
-class ConfigReader(object):
-	def __init__(self, file):
-		self.file = open(file, "r")
-		self.config = None
-		
-	def read(self):
-		self.config = dict()
-		for line in self.file:
-			if line.strip() != '' and line.strip()[0] != '#':
-				self.read_config_line(line.strip())
-		self.close()
-		return self.config
-		
-	def read_config_line(self, line):
-		name, value = line.split('=', 1)
-		if value[0] == '"' and value[-1] == '"':
-			self.config[name] = value[1:-1]
-		else:
-			try:
-				self.config[name] = float(value)
-			except ValueError:
-				try:
-					self.config[name] = int(value)
-				except ValueError:
-					self.config[name] = value
-			
-	def close(self):
-		self.file.close()
-		
-class ListReader(object):
-	def __init__(self, file):
-		self.file = open(file, "r")
-		self.config = None
-		
-	def read(self):
-		self.list = list()
-		for line in self.file:
-			if line.strip()[0] == '"' and line.strip[-1] == '"':
-				self.list.append(line.strip()[1:-1])
-			else:
-				self.list.append(line.strip())
-		self.close()
-		return self.list
-		
-	def close(self):
-		self.file.close()
 
 config_reader = ConfigReader(CONFIG_FILE)
 config = config_reader.read()
@@ -162,6 +115,6 @@ config = config_reader.read()
 vid_reader = ListReader(config['video_list'])
 vids = vid_reader.read()
 
-game = Touhou(vids)
+game = TouhouLauncher(config, vids)
 game.start()
 
