@@ -1,7 +1,12 @@
+import os
+os.environ['SDL_VIDEODRIVER'] = 'windib'
+
 import pygame, sys
 from pygame.locals import *
 
 RESOLUTION = (640, 480)
+
+CONFIG_FILE = 'launcher.cfg'
 
 MODE_CONTROL = 0
 MODE_VIDEO = 1
@@ -14,7 +19,7 @@ COLOR_WHITE = pygame.Color(255, 255, 255)
 COLOR_BLACK = pygame.Color(0, 0, 0)
 
 class Touhou(object):
-	def __init__(self):
+	def __init__(self, video_list):
 		pygame.init()
 		self.clock = pygame.time.Clock()
 		self.window_surface = pygame.display.set_mode(RESOLUTION, pygame.FULLSCREEN)
@@ -23,6 +28,8 @@ class Touhou(object):
 		self.gui_movie = None
 		self.running = True
 		self.msgfont = pygame.font.Font(pygame.font.get_default_font(), 12)
+		self.videos = video_list
+		self.videos_position = 0
 
 	def start(self):
 		while self.running:
@@ -59,7 +66,7 @@ class Touhou(object):
 
 	def start_movie(self):
 		pygame.mixer.quit()
-		self.gui_movie = pygame.movie.Movie('neko_miko.mpg')
+		self.gui_movie = pygame.movie.Movie(self.get_next_movie())
 		self.gui_movie.set_display(self.window_surface, self.window_surface.get_rect())
 		self.gui_movie.play()
 
@@ -80,6 +87,7 @@ class Touhou(object):
 			self.game_mode = MODE_CONTROL
 			self.idle_timer = pygame.time.get_ticks()
 			self.stop_movie()
+			self.window_surface.fill(COLOR_BLACK)
 
 	def write_idle_message(self):
 		diff = round((pygame.time.get_ticks() - self.idle_timer) / 1000)
@@ -93,7 +101,67 @@ class Touhou(object):
 		msgrect.topleft = (10, 20)
 		self.window_surface.fill(COLOR_BLACK, msgrect)
 		self.window_surface.blit(msgSurface, msgrect)
+		
+	def get_next_movie(self):
+		next = self.videos[self.videos_position]
+		self.videos_position += 1
+		if self.videos_position == len(self.videos):
+			self.videos_position = 0
+		return next
+		
+class ConfigReader(object):
+	def __init__(self, file):
+		self.file = open(file, "r")
+		self.config = None
+		
+	def read(self):
+		self.config = dict()
+		for line in self.file:
+			if line.strip() != '' and line.strip()[0] != '#':
+				self.read_config_line(line.strip())
+		self.close()
+		return self.config
+		
+	def read_config_line(self, line):
+		name, value = line.split('=', 1)
+		if value[0] == '"' and value[-1] == '"':
+			self.config[name] = value[1:-1]
+		else:
+			try:
+				self.config[name] = float(value)
+			except ValueError:
+				try:
+					self.config[name] = int(value)
+				except ValueError:
+					self.config[name] = value
+			
+	def close(self):
+		self.file.close()
+		
+class ListReader(object):
+	def __init__(self, file):
+		self.file = open(file, "r")
+		self.config = None
+		
+	def read(self):
+		self.list = list()
+		for line in self.file:
+			if line.strip()[0] == '"' and line.strip[-1] == '"':
+				self.list.append(line.strip()[1:-1])
+			else:
+				self.list.append(line.strip())
+		self.close()
+		return self.list
+		
+	def close(self):
+		self.file.close()
 
-game = Touhou()
+config_reader = ConfigReader(CONFIG_FILE)
+config = config_reader.read()
+
+vid_reader = ListReader(config['video_list'])
+vids = vid_reader.read()
+
+game = Touhou(vids)
 game.start()
 
