@@ -1,8 +1,10 @@
-import os
-os.environ['SDL_VIDEODRIVER'] = 'windib'
+#import os
+#os.environ['SDL_VIDEODRIVER'] = 'windib'
 
 import pygame, sys
 from pygame.locals import *
+
+import dekarrin.file.lines
 
 RESOLUTION = (640, 480)
 
@@ -21,12 +23,13 @@ class TouhouLauncher(object):
 	def __init__(self, configuration, video_list):
 		pygame.init()
 		self.clock = pygame.time.Clock()
-		self.window_surface = pygame.display.set_mode(RESOLUTION, pygame.FULLSCREEN)
+		self.window_surface = pygame.display.set_mode(RESOLUTION)
 		self.game_mode = MODE_CONTROL
 		self.idle_timer = 0
 		self.gui_movie = None
 		self.running = True
 		self.msgfont = pygame.font.Font(pygame.font.get_default_font(), 12)
+		print video_list
 		self.videos = video_list
 		self.videos_position = 0
 		self.idle_timeout = configuration['idle_timeout']
@@ -54,7 +57,7 @@ class TouhouLauncher(object):
 		if self.game_mode == MODE_CONTROL:
 			pygame.display.update()
 			self.clock.tick(30)
-			if pygame.time.get_ticks() - self.idle_timer >= IDLE_TIMEOUT:
+			if pygame.time.get_ticks() - self.idle_timer >= self.idle_timeout:
 				self.start_movie()
 				self.game_mode = MODE_VIDEO
 			else:
@@ -91,7 +94,7 @@ class TouhouLauncher(object):
 
 	def write_idle_message(self):
 		diff = round((pygame.time.get_ticks() - self.idle_timer) / 1000)
-		remain = int(round(IDLE_TIMEOUT / 1000) - diff)
+		remain = int(round(self.idle_timeout / 1000) - diff)
 		msg = str(remain) + " seconds until video..."
 		self.write_message(msg)
 
@@ -103,16 +106,18 @@ class TouhouLauncher(object):
 		self.window_surface.blit(msgSurface, msgrect)
 		
 	def get_next_movie(self):
+		print self.videos_position
+		print self.videos
 		next = self.videos[self.videos_position]
 		self.videos_position += 1
 		if self.videos_position == len(self.videos):
 			self.videos_position = 0
 		return next
 
-config_reader = ConfigReader(CONFIG_FILE)
+config_reader = dekarrin.file.lines.ConfigReader(CONFIG_FILE)
 config = config_reader.read()
 
-vid_reader = ListReader(config['video_list'])
+vid_reader = dekarrin.file.lines.ListReader(config['video_list'])
 vids = vid_reader.read()
 
 game = TouhouLauncher(config, vids)

@@ -15,54 +15,57 @@ class _LineReader(object):
 	"""Abastract base class for reading plaintext files made up of lines."""
 	
 	def __init__(self, file):
-
-class ConfigReader(object):
-	def __init__(self, file):
 		self.file = open(file, "r")
-		self.config = None
-		
+		self.result = None
+
 	def read(self):
-		self.config = dict()
+		self.result = self._blank_result()
 		for line in self.file:
 			line = line.strip()
 			if line != '' and line[0] != '#':
-				self.read_config_line(line)
-		self.close()
-		return self.config
+				self._read_line(line)
+		self.file.close()
+		return self.result
+	
+	def _blank_result(self):
+		return None
+
+	def _read_line(self):
+		pass
+
+class ConfigReader(_LineReader):
+	def __init__(self, file):
+		super(ConfigReader, self).__init__(file)
+
+	def _blank_result(self):
+		return dict()
 		
-	def read_config_line(self, line):
+	def _read_line(self, line):
 		name, value = line.split('=', 1)
 		name = name.strip()
 		value = value.strip()
 		if value[0] == '"' and value[-1] == '"':
-			self.config[name] = value[1:-1]
+			self.result[name] = value[1:-1]
 		else:
 			try:
-				self.config[name] = int(value)
+				self.result[name] = int(value)
 			except ValueError:
 				try:
-					self.config[name] = float(value)
+					self.result[name] = float(value)
 				except ValueError:
-					self.config[name] = value
-			
-	def close(self):
-		self.file.close()
+					self.result[name] = value
 		
-class ListReader(object):
+class ListReader(_LineReader):
 	def __init__(self, file):
-		self.file = open(file, "r")
-		self.config = None
+		super(ListReader, self).__init__(file)
 		
-	def read(self):
-		self.list = list()
+	def _blank_result(self):
+		return list()
+
+	def _read_line(self, line):
 		for line in self.file:
-			line = line.strip()
-			if line.strip()[0] == '"' and line.strip[-1] == '"':
-				self.list.append(line.strip()[1:-1])
+			if line[0] == '"' and line[-1] == '"':
+				self.result.append(line[1:-1])
 			else:
-				self.list.append(line.strip())
-		self.close()
-		return self.list
-		
-	def close(self):
-		self.file.close()
+				self.result.append(line)
+
