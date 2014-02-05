@@ -36,6 +36,7 @@ class Touhou(object):
 				self.exit_movie_mode()
 			elif event.type == KEYDOWN:
 				self.idle_timer = pygame.time.get_ticks()
+				self.exit_movie_mode()
 				if event.key == K_ESCAPE:
 					pygame.event.post(pygame.event.Event(QUIT))
 			elif event.type == QUIT:
@@ -63,7 +64,9 @@ class Touhou(object):
 		self.gui_movie.play()
 
 	def stop_movie(self):
+		self.gui_movie.stop()
 		self.gui_movie.set_display(None)
+		self.gui_movie = None
 		pygame.mixer.init()
 
 	def exit(self):
@@ -73,9 +76,10 @@ class Touhou(object):
 		self.running = False
 
 	def exit_movie_mode(self):
-		self.game_mode = MODE_CONTROL
-		self.idle_timer = pygame.time.get_ticks()
-		self.stop_movie()
+		if self.game_mode == MODE_VIDEO:
+			self.game_mode = MODE_CONTROL
+			self.idle_timer = pygame.time.get_ticks()
+			self.stop_movie()
 
 	def write_idle_message(self):
 		diff = round((pygame.time.get_ticks() - self.idle_timer) / 1000)
