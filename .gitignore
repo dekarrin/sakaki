@@ -1,4 +1,5 @@
 *.mpg
 *.mp4
 *.swp
+*.pyc
 Thumbs.db
