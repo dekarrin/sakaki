@@ -29,7 +29,6 @@ class TouhouLauncher(object):
 		self.gui_movie = None
 		self.running = True
 		self.msgfont = pygame.font.Font(pygame.font.get_default_font(), 12)
-		print video_list
 		self.videos = video_list
 		self.videos_position = 0
 		self.idle_timeout = configuration['idle_timeout']
@@ -97,6 +96,7 @@ class TouhouLauncher(object):
 		remain = int(round(self.idle_timeout / 1000) - diff)
 		msg = str(remain) + " seconds until video..."
 		self.write_message(msg)
+
 
 	def write_message(self, msg):
 		msgSurface = self.msgfont.render(msg, False, COLOR_WHITE)
