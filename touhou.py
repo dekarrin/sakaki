@@ -6,6 +6,9 @@ from pygame.locals import *
 
 import dekarrin.file.lines
 
+import json
+import os
+
 CONFIG_FILE = 'launcher.cfg'
 
 MODE_CONTROL = 0
@@ -18,7 +21,7 @@ COLOR_BLACK = pygame.Color(0, 0, 0)
 
 class TouhouLauncher(object):
 
-	def __init__(self, configuration, video_list):
+	def __init__(self, configuration, video_list, menu_data):
 		pygame.init()
 		resolution = (configuration['resolution_width'], configuration['resolution_height']);
 		self.clock = pygame.time.Clock()
@@ -31,6 +34,17 @@ class TouhouLauncher(object):
 		self.videos = video_list
 		self.videos_position = 0
 		self.idle_timeout = configuration['idle_timeout']
+		self.menu_position = 0
+		self.init_menus(menu_data)
+		self.set_menu("main")
+
+	def init_menus(self, data):
+		self._menus = dict()
+		for menu in data:
+			self._menus[menu['id']] = menu
+
+	def set_menu(self, id):
+		self._current_menu = self._menus[id]
 
 	def start(self):
 		while self.running:
@@ -53,6 +67,7 @@ class TouhouLauncher(object):
 
 	def update(self):
 		if self.game_mode == MODE_CONTROL:
+			self.show_menu()
 			pygame.display.update()
 			self.clock.tick(30)
 			if pygame.time.get_ticks() - self.idle_timer >= self.idle_timeout:
@@ -64,6 +79,34 @@ class TouhouLauncher(object):
 		elif self.game_mode == MODE_VIDEO:
 			if not self.gui_movie.get_busy():
 				pygame.event.post(pygame.event.Event(MOVIECOMPLETE))
+
+	def show_menu(self):
+		self.draw_background()
+		self.draw_preview()
+		self.draw_items()
+
+	def draw_background(self):
+		pass
+
+	def draw_preview(self):
+		pass
+
+	def draw_items(self):
+		coords = self.draw_selected_item()
+		self.draw_upper_items(coords)
+		self.draw_lower_items(coords)
+		
+	def draw_selected_item(self):
+		items = self.get_menu_items()
+		item = items[self.menu_position]
+		self.blit_text(
+
+	def draw_upper_items(self):
+		items = self.get_menu_items()
+		pass
+
+	def get_menu_items(self):
+		return self._current_menu['items']
 
 	def start_movie(self):
 		pygame.mixer.quit()
@@ -96,6 +139,11 @@ class TouhouLauncher(object):
 		msg = str(remain) + " seconds until video..."
 		self.write_message(msg)
 
+	def blit_text(self, msg, x, y, font=pygame.font.get_default_font(), color=COLOR_WHITE, size=12, aa=True):
+		surface = pygame.font.Font(font, size).render(msg, aa, color)
+		msgrect = msgSurface.get_rect()
+		msgrect.topleft = (x, y)
+		self.window_surface.blit(surface, msgrect)
 
 	def write_message(self, msg):
 		msgSurface = self.msgfont.render(msg, False, COLOR_WHITE)
@@ -117,6 +165,11 @@ config = config_reader.read()
 vid_reader = dekarrin.file.lines.ListReader(config['video_list'])
 vids = vid_reader.read()
 
-game = TouhouLauncher(config, vids)
+menu_data = []
+for menu_item in os.listdir(config['menus_dir']):
+	jfile = open(menu_item)
+	menu_data.extend(json.load(jfile))
+
+game = TouhouLauncher(config, vids, menu_data)
 game.start()
 

@@ -11,6 +11,8 @@ Some file formats consist of different values Double quotes may be used to
 encapsulate leading and trailing whitespace that is to be preserved.
 """
 
+import json
+
 class _LineReader(object):
 	"""Abastract base class for reading plaintext files made up of lines."""
 	
@@ -25,12 +27,16 @@ class _LineReader(object):
 			if line != '' and line[0] != '#':
 				self._read_line(line)
 		self.file.close()
+		self._on_close()
 		return self.result
 	
 	def _blank_result(self):
 		return None
 
 	def _read_line(self):
+		pass
+
+	def _on_close(self):
 		pass
 
 class ConfigReader(_LineReader):
@@ -67,4 +73,3 @@ class ListReader(_LineReader):
 			self.result.append(line[1:-1])
 		else:
 			self.result.append(line)
-
