@@ -63,9 +63,8 @@ class ListReader(_LineReader):
 		return list()
 
 	def _read_line(self, line):
-		for line in self.file:
-			if line[0] == '"' and line[-1] == '"':
-				self.result.append(line[1:-1])
-			else:
-				self.result.append(line)
+		if line[0] == '"' and line[-1] == '"':
+			self.result.append(line[1:-1])
+		else:
+			self.result.append(line)
 
