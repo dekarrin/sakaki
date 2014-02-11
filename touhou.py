@@ -6,8 +6,6 @@ from pygame.locals import *
 
 import dekarrin.file.lines
 
-RESOLUTION = (640, 480)
-
 CONFIG_FILE = 'launcher.cfg'
 
 MODE_CONTROL = 0
@@ -22,8 +20,9 @@ class TouhouLauncher(object):
 
 	def __init__(self, configuration, video_list):
 		pygame.init()
+		resolution = (configuration['resolution_width'], configuration['resolution_height']);
 		self.clock = pygame.time.Clock()
-		self.window_surface = pygame.display.set_mode(RESOLUTION)
+		self.window_surface = pygame.display.set_mode(resolution)
 		self.game_mode = MODE_CONTROL
 		self.idle_timer = 0
 		self.gui_movie = None
@@ -106,8 +105,6 @@ class TouhouLauncher(object):
 		self.window_surface.blit(msgSurface, msgrect)
 		
 	def get_next_movie(self):
-		print self.videos_position
-		print self.videos
 		next = self.videos[self.videos_position]
 		self.videos_position += 1
 		if self.videos_position == len(self.videos):
