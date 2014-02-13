@@ -109,8 +109,8 @@ class TouhouLauncher(object):
 
 	def draw_items(self):
 		coords = self.draw_selected_item()
-		#self.draw_other_items(coords, above=True)
-		#self.draw_other_items(coords, above=False)
+		self.draw_other_items(coords, above=True)
+		self.draw_other_items(coords, above=False)
 		
 	def draw_selected_item(self):
 		items = self.get_menu_items()
@@ -119,7 +119,7 @@ class TouhouLauncher(object):
 		textr = text.get_rect()
 		x, y = self.get_selected_coords(textr)
 		self.blit_surface(text, x, y)
-		return textr
+		return pygame.Rect((x, y), textr.size)
 		
 	def get_selected_coords(self, selrect):
 		x = round((self.config['menu_percent_width']/100.0) * self.get_width())
@@ -144,6 +144,7 @@ class TouhouLauncher(object):
 				ydiff += textr.height
 			else:
 				ydiff += selrect.height
+			print ydiff
 			x = selrect.x
 			y = selrect.y + (ydiff * direction_mult)
 			if y < 0 or y + textr.height > self.get_height():
