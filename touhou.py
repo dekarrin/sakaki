@@ -144,9 +144,8 @@ class TouhouLauncher(object):
 				ydiff += textr.height
 			else:
 				ydiff += selrect.height
-			print ydiff
 			x = selrect.x
-			y = selrect.y + (ydiff * direction_mult)
+			y = selrect.y + (ydiff * direction_mult * num)
 			if y < 0 or y + textr.height > self.get_height():
 				break
 			else:
