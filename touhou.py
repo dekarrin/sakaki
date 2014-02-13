@@ -63,12 +63,10 @@ class TouhouLauncher(object):
 		self._current_menu = self._menus[id]
 
 	def select_next_item(self):
-		if (self._menu_position < len(self._current_menu)):
-			self._menu_position += 1
+		self._menu_position = (self._menu_position + 1) % len(self._current_menu['items'])
 
 	def select_prev_item(self):
-		if (self._menu_position > 0):
-			self._menu_position -= 1
+		self._menu_position = (self._menu_position - 1) % len(self._current_menu['items'])
 
 	def start(self):
 		while self.running:
@@ -146,6 +144,7 @@ class TouhouLauncher(object):
 		num = 1
 		while True:
 			pos = self._menu_position + (direction_mult * num)
+			pos %= len(items)
 			if pos < 0 or pos >= len(items):
 				break
 			item = items[pos]
