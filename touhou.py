@@ -37,6 +37,7 @@ class TouhouLauncher(object):
 		self.menu_position = 0
 		self.init_menus(menu_data)
 		self.set_menu(self.config['root_menu_id'])
+		self.background_surf = pygame.image.load(config['background'])
 
 	def init_menus(self, data):
 		self._menus = dict()
@@ -82,26 +83,26 @@ class TouhouLauncher(object):
 
 	def update(self):
 		if self.game_mode == MODE_CONTROL:
-			self.show_menu()
-			pygame.display.update()
-			self.clock.tick(30)
+			self.draw_menu()
 			if pygame.time.get_ticks() - self.idle_timer >= self.idle_timeout:
 				self.start_movie()
 				self.game_mode = MODE_VIDEO
 			else:
-				self.write_idle_message()
+				self.draw_idle_message()
+			pygame.display.flip()
+			self.clock.tick(30)
 
 		elif self.game_mode == MODE_VIDEO:
 			if not self.gui_movie.get_busy():
 				pygame.event.post(pygame.event.Event(MOVIECOMPLETE))
 
-	def show_menu(self):
+	def draw_menu(self):
 		self.draw_background()
 		self.draw_preview()
 		self.draw_items()
 
 	def draw_background(self):
-		pass
+		self.window_surface.blit(self.background_surf, self.background_surf.get_rect())
 
 	def draw_preview(self):
 		pass
@@ -185,11 +186,11 @@ class TouhouLauncher(object):
 			self.stop_movie()
 			self.window_surface.fill(COLOR_BLACK)
 
-	def write_idle_message(self):
+	def draw_idle_message(self):
 		diff = round((pygame.time.get_ticks() - self.idle_timer) / 1000)
 		remain = int(round(self.idle_timeout / 1000) - diff)
 		msg = str(remain) + " seconds until video..."
-		self.write_message(msg)
+		self.draw_message(msg)
 
 	def make_text_surface(self, msg, font=pygame.font.get_default_font(), color=COLOR_WHITE, size=12, aa=True):
 		return pygame.font.Font(font, size).render(msg, aa, color)
@@ -200,11 +201,10 @@ class TouhouLauncher(object):
 		srect.topleft = (x, y)
 		self.window_surface.blit(surface, srect)
 
-	def write_message(self, msg):
-		msgSurface = self.msgfont.render(msg, False, COLOR_WHITE)
+	def draw_message(self, msg):
+		msgSurface = self.msgfont.render(msg, True, COLOR_WHITE)
 		msgrect = msgSurface.get_rect()
 		msgrect.topleft = (10, 20)
-		self.window_surface.fill(COLOR_BLACK, msgrect)
 		self.window_surface.blit(msgSurface, msgrect)
 		
 	def get_next_movie(self):
