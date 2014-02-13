@@ -1,9 +1,7 @@
-# Format is a JSON list
-
 [
 
 {
-	"id": "MAIN",
+	"id": "_MAIN_",
 	"title": "MAIN",
 	"items": [
 		"item-1",
@@ -35,6 +33,6 @@
 	"id": "item-4",
 	"title": "Item #4",
 	"items": []
-},
+}
 
 ]
