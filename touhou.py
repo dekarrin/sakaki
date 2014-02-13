@@ -237,6 +237,9 @@ for menu_item in os.listdir(config['menus_dir']):
 	menu_data.extend(json.load(jfile))
 	jfile.close()
 
-game = TouhouLauncher(config, vids, menu_data)
+bindings_reader = dekarrin.file.lines.ConfigReader(config['key_bindings'])
+key_bindings = bindings_reader.read()
+
+game = TouhouLauncher(config, vids, menu_data, key_bindings)
 game.start()
 
