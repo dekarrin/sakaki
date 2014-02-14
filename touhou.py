@@ -36,39 +36,8 @@ class TouhouLauncher(object):
 		self.videos = video_list
 		self.videos_position = 0
 		self.idle_timeout = configuration['idle_timeout']
-		self._menu_position = 0
-		self.init_menus(menu_data)
-		self.set_menu(self.config['root_menu_id'])
+		self._wheel = WheelManager(wheel_data, config['root_wheel_id'])
 		self.background_surf = pygame.image.load(config['background'])
-
-	def init_menus(self, data):
-		self._menus = dict()
-		for menu in data:
-			self._menus[menu['id']] = menu
-		self.assign_menu_subitems(self._menus[self.config['root_menu_id']])
-			
-	def assign_menu_subitems(self, menu):
-		if 'set' in menu:
-			return
-		menu['set'] = True
-		ids = menu['items']
-		menu['items'] = list()
-		for id in ids:
-			if id in self._menus:
-				menu_item = self._menus[id]
-				menu['items'].append(menu_item)
-				self.assign_menu_subitems(menu_item)
-			else:
-				print "Warning! Menu '%s' links to nonexistent menu '%s'. Item not added." % (menu['id'], id)
-
-	def set_menu(self, id):
-		self._current_menu = self._menus[id]
-
-	def select_next_item(self):
-		self._menu_position = (self._menu_position + 1) % len(self._current_menu['items'])
-
-	def select_prev_item(self):
-		self._menu_position = (self._menu_position - 1) % len(self._current_menu['items'])
 
 	def start(self):
 		while self.running:
@@ -95,7 +64,7 @@ class TouhouLauncher(object):
 
 	def update(self):
 		if self.game_mode == MODE_CONTROL:
-			self.draw_menu()
+			self.draw_wheel()
 			if pygame.time.get_ticks() - self.idle_timer >= self.idle_timeout:
 				self.start_movie()
 				self.game_mode = MODE_VIDEO
@@ -108,7 +77,7 @@ class TouhouLauncher(object):
 			if not self.gui_movie.get_busy():
 				pygame.event.post(pygame.event.Event(MOVIECOMPLETE))
 
-	def draw_menu(self):
+	def draw_wheel(self):
 		self.draw_background()
 		self.draw_preview()
 		self.draw_items()
@@ -125,9 +94,7 @@ class TouhouLauncher(object):
 		self.draw_other_items(coords, above=False)
 		
 	def draw_selected_item(self):
-		items = self.get_menu_items()
-		item = items[self._menu_position]
-		text = self.make_text_surface(item['title'], size=self.config['menu_item_font_size_selected'])
+		text = self.make_text_surface(self._wheel.get_text(), size=self.config['menu_item_font_size_selected'])
 		textr = text.get_rect()
 		x, y = self.get_selected_coords(textr)
 		self.blit_surface(text, x, y)
@@ -246,6 +213,66 @@ class KeyBinder(object):
 
 	def key_for(self, action_index):
 		return self._bindings[action_index]
+
+class WheelManager(object):
+	"""The wheel being displayed."""
+
+	def __init__(self, wheel_data, root_wheel_id):
+		self._current = None
+		self._stack = list()
+		self._position = 0
+		self._root_wheel_id = root_wheel_id
+		self._wheels = dict()
+		for wheel in wheel_data:
+			self._add_wheel(wheel)
+		self._init_wheels()
+		self.change_to_root()
+
+	def _add_wheel(self, wheel):
+		self._wheels[wheel['id']] = wheel
+
+	def _init_wheels(self):
+		self._assign_subitems(self._root_wheel_id)
+
+	def _assign_subitems(self, wheel_id):
+		wheel = self._wheels[wheel_id]
+		if 'set' in wheel:
+			return
+		wheel['set'] = True
+		ids = wheel['items']
+		wheel['items'] = list()
+		for id in ids:
+			if id in self._wheels:
+				wheel['items'].append(self._wheel[id])
+				self._assign_subitems(self._wheel[id])
+			else:
+				print "Warning! Wheel '%s' links to nonexistant item '%s'. Item not added." % (wheel['id'], id)
+
+	def change_to_root(self):
+		self.change(self._root_wheel_id)
+
+	def change(self, wheel_id):
+		self._current = self._wheels[wheel_id]
+
+	def next(self):
+		self._position = (self._position + 1) % len(self._current['items'])
+
+	def prev(self):
+		self._position = (self._position - 1) % len(self._current['items'])
+
+	def advance(self):
+		self._stack.append(self._current['id'])
+		id = self._current[self._position]['id']
+		self.change(id)
+
+	def backtrack(self):
+		"""Go to the previous wheel."""
+		if len(self._stack) > 0:
+			id = self._stack.pop()
+			self.change(id)	
+
+	def get_text(self):
+		return self._current['items'][self._position]['title']
 
 config_reader = dekarrin.file.lines.ConfigReader(CONFIG_FILE)
 config = config_reader.read()
