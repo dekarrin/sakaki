@@ -21,7 +21,8 @@ COLOR_BLACK = pygame.Color(0, 0, 0)
 class TouhouLauncher(object):
 
 	def __init__(self, configuration, video_list, menu_data, key_bindings):
-		self.bindings = key_bindings
+		self.binder = KeyBinder()
+		self.binder.bind_all(key_bindings)
 		self.config = configuration
 		pygame.init()
 		resolution = (configuration['resolution_width'], configuration['resolution_height']);
@@ -82,11 +83,11 @@ class TouhouLauncher(object):
 			elif event.type == KEYDOWN:
 				self.idle_timer = pygame.time.get_ticks()
 				self.exit_movie_mode()
-				if event.key == K_ESCAPE:
+				if event.key == self.binder.key_for('LAUNCHER_EXIT'):
 					pygame.event.post(pygame.event.Event(QUIT))
-				elif event.key == K_UP:
+				elif event.key == self.binder.key_for('WHEEL_PREV'):
 					self.select_prev_item()
-				elif event.key == K_DOWN:
+				elif event.key == self.binder.key_for('WHEEL_NEXT'):
 					self.select_next_item()
 			elif event.type == QUIT:
 			# check quit last so exit is not followed by pygame calls
@@ -131,7 +132,7 @@ class TouhouLauncher(object):
 		x, y = self.get_selected_coords(textr)
 		self.blit_surface(text, x, y)
 		return pygame.Rect((x, y), textr.size)
-		
+	
 	def get_selected_coords(self, selrect):
 		x = round((self.config['menu_percent_width']/100.0) * self.get_width())
 		y = round(((self.config['menu_main_item_percent_height']/100.0) * self.get_height()) - (selrect.height / 2.0))
@@ -226,6 +227,26 @@ class TouhouLauncher(object):
 			self.videos_position = 0
 		return next
 
+class KeyBinder(object):
+	"""Provide automatic binding to pygame key constants."""
+
+	def __init__(self):
+		self._bindings = dict()
+	
+	def bind_all(self, text_bindings):
+		for action, binding in text_bindings.items():
+			self.bind(action, binding)
+
+	def bind(self, action_index, key_name):
+		try:
+			self._bindings[action_index] = eval(key_name)
+		except NameError as e:
+			print "'%s' is not a valid key code!" % key_name
+			raise e
+
+	def key_for(self, action_index):
+		return self._bindings[action_index]
+
 config_reader = dekarrin.file.lines.ConfigReader(CONFIG_FILE)
 config = config_reader.read()
 
@@ -239,10 +260,7 @@ for menu_item in os.listdir(config['menus_dir']):
 	jfile.close()
 
 bindings_reader = dekarrin.file.lines.ConfigReader(config['key_bindings'])
-key_bindings_text = bindings_reader.read()
-key_bindings = dict()
-for action, binding in key_bindings_text:
-	key_bindings[action] = eval(binding)
+key_bindings = bindings_reader.read()
 
 game = TouhouLauncher(config, vids, menu_data, key_bindings)
 game.start()
