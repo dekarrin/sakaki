@@ -20,7 +20,8 @@ COLOR_BLACK = pygame.Color(0, 0, 0)
 
 class TouhouLauncher(object):
 
-	def __init__(self, configuration, video_list, menu_data):
+	def __init__(self, configuration, video_list, menu_data, key_bindings):
+		self.bindings = key_bindings
 		self.config = configuration
 		pygame.init()
 		resolution = (configuration['resolution_width'], configuration['resolution_height']);
@@ -238,8 +239,10 @@ for menu_item in os.listdir(config['menus_dir']):
 	jfile.close()
 
 bindings_reader = dekarrin.file.lines.ConfigReader(config['key_bindings'])
-key_bindings = bindings_reader.read()
+key_bindings_text = bindings_reader.read()
+key_bindings = dict()
+for action, binding in key_bindings_text:
+	key_bindings[action] = eval(binding)
 
 game = TouhouLauncher(config, vids, menu_data, key_bindings)
 game.start()
-
