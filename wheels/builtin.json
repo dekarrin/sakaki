@@ -3,43 +3,37 @@
 {
 	"id": "_MAIN_",
 	"title": "MAIN",
-	"items": [
-		"item-1",
-		"item-2",
-		"item-3",
-		"item-4",
-		"item-5"
-	]
+	"parent": "_MAIN_"
 },
 
 {
 	"id": "item-1",
 	"title": "Item #1",
-	"items": []
+	"parent": "_MAIN_"
 },
 
 {
 	"id": "item-2",
 	"title": "Item #2",
-	"items": []
+	"parent": "_MAIN_"
 },
 
 {
 	"id": "item-3",
 	"title": "Item #3",
-	"items": []
+	"parent": "_MAIN_"
 },
 
 {
 	"id": "item-4",
 	"title": "Item #4",
-	"items": []
+	"parent": "_MAIN_"
 },
 
 {
 	"id": "item-5",
 	"title": "Item #5",
-	"items": []
+	"parent": "_MAIN_"
 }
 
 ]

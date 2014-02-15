@@ -219,29 +219,32 @@ class WheelManager(object):
 		self._root_wheel_id = root_wheel_id
 		self._wheels = dict()
 		for wheel in wheel_data:
-			self._add_wheel(wheel)
+			self._wheels[wheel['id']] = wheel
 		self._init_wheels()
 		self.change_to_root()
 
-	def _add_wheel(self, wheel):
-		self._wheels[wheel['id']] = wheel
-
 	def _init_wheels(self):
-		self._assign_subitems(self._root_wheel_id)
-
+		for id in self._wheels:
+			self._assign_subitems(id)
+		for id in self._wheels:
+			if 'set' in self._wheels[id]:
+				del self._wheels[id]['set']
+				
 	def _assign_subitems(self, wheel_id):
 		wheel = self._wheels[wheel_id]
 		if 'set' in wheel:
-			return
+				return
 		wheel['set'] = True
-		ids = wheel['items']
-		wheel['items'] = list()
-		for id in ids:
-			if id in self._wheels:
-				wheel['items'].append(self._wheels[id])
-				self._assign_subitems(id)
-			else:
-				print "Warning! Wheel '%s' links to nonexistant item '%s'. Item not added." % (wheel['id'], id)
+		parent_id = wheel['parent']
+		if parent_id in self._wheels:
+			wheel['parent'] = self._wheels[parent_id]
+			if wheel_id != self._root_wheel_id:
+				if 'items' not in self._wheels[parent_id]:
+					self._wheels[parent_id]['items'] = list()
+				self._wheels[parent_id]['items'].append(wheel)
+				self._assign_subitems(parent_id)
+		else:
+			print "Warning! Wheel '%s' links to nonexistant parent '%s'. Wheel not linked." % (wheel_id, parent_id)
 
 	def change_to_root(self):
 		self.change(self._root_wheel_id)
