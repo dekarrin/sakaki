@@ -138,9 +138,6 @@ class TouhouLauncher(object):
 	def get_width(self):
 		return pygame.display.Info().current_w
 
-	def get_menu_items(self):
-		return self._current_menu['items']
-
 	def start_movie(self):
 		pygame.mixer.quit()
 		self.gui_movie = pygame.movie.Movie(self.get_next_movie())
@@ -213,6 +210,9 @@ class KeyBinder(object):
 
 	def key_for(self, action_index):
 		return self._bindings[action_index]
+
+class Animator(object):
+	pass
 
 class WheelManager(object):
 	"""The wheel being displayed."""
