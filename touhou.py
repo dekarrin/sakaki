@@ -58,6 +58,10 @@ class TouhouLauncher(object):
 					self._wheel.prev()
 				elif event.key == self.binder.key_for('WHEEL_NEXT'):
 					self._wheel.next()
+				elif event.key == self.binder.key_for('WHEEL_ADVANCE'):
+					self._wheel.advance()
+				elif event.key == self.binder.key_for('WHEEL_BACK'):
+					self._wheel.backtrack()
 			elif event.type == QUIT:
 			# check quit last so exit is not followed by pygame calls
 				self.exit()
@@ -80,7 +84,8 @@ class TouhouLauncher(object):
 	def draw_wheel(self):
 		self.draw_background()
 		self.draw_preview()
-		self.draw_items()
+		if self._wheel.subitems_count() > 0:
+			self.draw_items()
 
 	def draw_background(self):
 		self.window_surface.blit(self.background_surf, self.background_surf.get_rect())
@@ -94,7 +99,7 @@ class TouhouLauncher(object):
 		self.draw_other_items(coords, above=False)
 		
 	def draw_selected_item(self):
-		text = self.make_text_surface(self._wheel.get_text(), size=self.config['menu_item_font_size_selected'])
+		text = self.make_text_surface(self._wheel.get_item_title(), size=self.config['menu_item_font_size_selected'])
 		textr = text.get_rect()
 		x, y = self.get_selected_coords(textr)
 		self.blit_surface(text, x, y)
@@ -111,7 +116,7 @@ class TouhouLauncher(object):
 			direction_mult *= -1
 		num = 1
 		while True:
-			title = self._wheel.get_text(num * direction_mult)
+			title = self._wheel.get_item_title(num * direction_mult)
 			text = self.make_text_surface(title, size=self.config['menu_item_font_size'])
 			textr = text.get_rect()
 			ydiff = self.config['menu_item_vertical_spacing'] + textr.height
@@ -214,7 +219,6 @@ class WheelManager(object):
 
 	def __init__(self, wheel_data, root_wheel_id):
 		self._current = None
-		self._stack = list()
 		self._position = 0
 		self._root_wheel_id = root_wheel_id
 		self._wheels = dict()
@@ -229,6 +233,8 @@ class WheelManager(object):
 		for id in self._wheels:
 			if 'set' in self._wheels[id]:
 				del self._wheels[id]['set']
+			if 'items' not in self._wheels[id]:
+				self._wheels[id]['items'] = list()
 				
 	def _assign_subitems(self, wheel_id):
 		wheel = self._wheels[wheel_id]
@@ -251,28 +257,36 @@ class WheelManager(object):
 
 	def change(self, wheel_id):
 		self._current = self._wheels[wheel_id]
+		self._position = 0
 
 	def next(self):
-		self._position = (self._position + 1) % len(self._current['items'])
+		if self.subitems_count() > 0:
+			self._position = (self._position + 1) % len(self._current['items'])
 
 	def prev(self):
-		self._position = (self._position - 1) % len(self._current['items'])
+		if self.subitems_count() > 0:
+			self._position = (self._position - 1) % len(self._current['items'])
 
 	def advance(self):
-		self._stack.append(self._current['id'])
-		id = self._current[self._position]['id']
-		self.change(id)
+		if self.subitems_count() > 0:
+			id = self._current['items'][self._position]['id']
+			self.change(id)
 
 	def backtrack(self):
 		"""Go to the previous wheel."""
-		if len(self._stack) > 0:
-			id = self._stack.pop()
-			self.change(id)
+		id = self._current['parent']['id']
+		self.change(id)
 			
-	def get_text(self, position=0):
+	def subitems_count(self):
+		return len(self._current['items'])
+			
+	def get_item_title(self, position=0):
 		"""Get the text of the menu item."""
-		pos = (self._position + position) % len(self._current['items'])
-		return self._current['items'][pos]['title']
+		if self.subitems_count() > 0:
+			pos = (self._position + position) % self.subitems_count()
+			return self._current['items'][pos]['title']
+		else:
+			return None
 
 config_reader = dekarrin.file.lines.ConfigReader(CONFIG_FILE)
 config = config_reader.read()
