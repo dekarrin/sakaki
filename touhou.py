@@ -20,7 +20,7 @@ COLOR_BLACK = pygame.Color(0, 0, 0)
 
 class TouhouLauncher(object):
 
-	def __init__(self, configuration, video_list, menu_data, key_bindings):
+	def __init__(self, configuration, video_list, wheel_data, key_bindings):
 		self.binder = KeyBinder()
 		self.binder.bind_all(key_bindings)
 		self.config = configuration
@@ -55,9 +55,9 @@ class TouhouLauncher(object):
 				if event.key == self.binder.key_for('LAUNCHER_EXIT'):
 					pygame.event.post(pygame.event.Event(QUIT))
 				elif event.key == self.binder.key_for('WHEEL_PREV'):
-					self.select_prev_item()
+					self._wheel.prev()
 				elif event.key == self.binder.key_for('WHEEL_NEXT'):
-					self.select_next_item()
+					self._wheel.next()
 			elif event.type == QUIT:
 			# check quit last so exit is not followed by pygame calls
 				self.exit()
@@ -109,15 +109,10 @@ class TouhouLauncher(object):
 		direction_mult = 1
 		if above:
 			direction_mult *= -1
-		items = self.get_menu_items()
 		num = 1
 		while True:
-			pos = self._menu_position + (direction_mult * num)
-			pos %= len(items)
-			if pos < 0 or pos >= len(items):
-				break
-			item = items[pos]
-			text = self.make_text_surface(item['title'], size=self.config['menu_item_font_size'])
+			title = self._wheel.get_text(num * direction_mult)
+			text = self.make_text_surface(title, size=self.config['menu_item_font_size'])
 			textr = text.get_rect()
 			ydiff = self.config['menu_item_vertical_spacing'] + textr.height
 			if above:
@@ -243,8 +238,8 @@ class WheelManager(object):
 		wheel['items'] = list()
 		for id in ids:
 			if id in self._wheels:
-				wheel['items'].append(self._wheel[id])
-				self._assign_subitems(self._wheel[id])
+				wheel['items'].append(self._wheels[id])
+				self._assign_subitems(id)
 			else:
 				print "Warning! Wheel '%s' links to nonexistant item '%s'. Item not added." % (wheel['id'], id)
 
@@ -269,10 +264,12 @@ class WheelManager(object):
 		"""Go to the previous wheel."""
 		if len(self._stack) > 0:
 			id = self._stack.pop()
-			self.change(id)	
-
-	def get_text(self):
-		return self._current['items'][self._position]['title']
+			self.change(id)
+			
+	def get_text(self, position=0):
+		"""Get the text of the menu item."""
+		pos = (self._position + position) % len(self._current['items'])
+		return self._current['items'][pos]['title']
 
 config_reader = dekarrin.file.lines.ConfigReader(CONFIG_FILE)
 config = config_reader.read()
@@ -280,14 +277,14 @@ config = config_reader.read()
 vid_reader = dekarrin.file.lines.ListReader(config['video_list'])
 vids = vid_reader.read()
 
-menu_data = []
-for menu_item in os.listdir(config['menus_dir']):
-	jfile = open(os.path.join(config['menus_dir'], menu_item))
-	menu_data.extend(json.load(jfile))
+wheel_data = []
+for wheel_item in os.listdir(config['wheels_dir']):
+	jfile = open(os.path.join(config['wheels_dir'], wheel_item))
+	wheel_data.extend(json.load(jfile))
 	jfile.close()
 
 bindings_reader = dekarrin.file.lines.ConfigReader(config['key_bindings'])
 key_bindings = bindings_reader.read()
 
-game = TouhouLauncher(config, vids, menu_data, key_bindings)
+game = TouhouLauncher(config, vids, wheel_data, key_bindings)
 game.start()
