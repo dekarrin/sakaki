@@ -13,7 +13,7 @@ CONFIG_FILE = 'launcher.cfg'
 M_CONTROL = 0
 M_VIDEO = 1
 
-MOVIECOMPLETE = USEREVENT + 1
+E_MOVIECOMPLETE = 1
 
 COLOR_WHITE = pygame.Color(255, 255, 255)
 COLOR_BLACK = pygame.Color(0, 0, 0)
@@ -48,7 +48,7 @@ class TouhouLauncher(object):
 	def poll_events(self):
 		for event in pygame.event.get():
 			if event.type == USEREVENT:
-				self.exit_movie_mode()
+				self._handle_user_event(event)
 			elif event.type == KEYDOWN:
 				self.idle_timer = pygame.time.get_ticks()
 				self.exit_movie_mode()
@@ -65,6 +65,10 @@ class TouhouLauncher(object):
 			elif event.type == QUIT:
 			# check quit last so exit is not followed by pygame calls
 				self.exit()
+				
+	def _handle_user_event(self, event):
+		if event.code == E_MOVIECOMPLETE:
+			self.exit_movie_mode()
 
 	def update(self):
 		if self.game_mode == M_CONTROL:
@@ -79,7 +83,7 @@ class TouhouLauncher(object):
 
 		elif self.game_mode == M_VIDEO:
 			if not self.gui_movie.get_busy():
-				pygame.event.post(pygame.event.Event(MOVIECOMPLETE))
+				pygame.event.post(pygame.event.Event(USEREVENT, code=E_MOVIECOMPLETE))
 
 	def draw_wheel(self):
 		self.draw_background()
