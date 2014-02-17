@@ -10,8 +10,8 @@ import os
 
 CONFIG_FILE = 'launcher.cfg'
 
-MODE_CONTROL = 0
-MODE_VIDEO = 1
+M_CONTROL = 0
+M_VIDEO = 1
 
 MOVIECOMPLETE = USEREVENT + 1
 
@@ -28,7 +28,7 @@ class TouhouLauncher(object):
 		resolution = (configuration['resolution_width'], configuration['resolution_height']);
 		self.clock = pygame.time.Clock()
 		self.window_surface = pygame.display.set_mode(resolution)
-		self.game_mode = MODE_CONTROL
+		self.game_mode = M_CONTROL
 		self.idle_timer = 0
 		self.gui_movie = None
 		self.running = True
@@ -47,7 +47,7 @@ class TouhouLauncher(object):
 
 	def poll_events(self):
 		for event in pygame.event.get():
-			if event.type == MOVIECOMPLETE:
+			if event.type == USEREVENT:
 				self.exit_movie_mode()
 			elif event.type == KEYDOWN:
 				self.idle_timer = pygame.time.get_ticks()
@@ -67,17 +67,17 @@ class TouhouLauncher(object):
 				self.exit()
 
 	def update(self):
-		if self.game_mode == MODE_CONTROL:
+		if self.game_mode == M_CONTROL:
 			self.draw_wheel()
 			if pygame.time.get_ticks() - self.idle_timer >= self.idle_timeout:
 				self.start_movie()
-				self.game_mode = MODE_VIDEO
+				self.game_mode = M_VIDEO
 			else:
 				self.draw_idle_message()
 			pygame.display.flip()
 			self.clock.tick(30)
 
-		elif self.game_mode == MODE_VIDEO:
+		elif self.game_mode == M_VIDEO:
 			if not self.gui_movie.get_busy():
 				pygame.event.post(pygame.event.Event(MOVIECOMPLETE))
 
@@ -151,14 +151,14 @@ class TouhouLauncher(object):
 		pygame.mixer.init()
 
 	def exit(self):
-		if self.game_mode == MODE_VIDEO:
+		if self.game_mode == M_VIDEO:
 			self.stop_movie()
 		pygame.quit()
 		self.running = False
 
 	def exit_movie_mode(self):
-		if self.game_mode == MODE_VIDEO:
-			self.game_mode = MODE_CONTROL
+		if self.game_mode == M_VIDEO:
+			self.game_mode = M_CONTROL
 			self.idle_timer = pygame.time.get_ticks()
 			self.stop_movie()
 			self.window_surface.fill(COLOR_BLACK)
@@ -211,8 +211,10 @@ class KeyBinder(object):
 	def key_for(self, action_index):
 		return self._bindings[action_index]
 
-class Animator(object):
-	pass
+class Timer(object):
+	"""Lets us add functions that are to be repeated."""
+	def __init__(object):
+		pass
 
 class WheelManager(object):
 	"""The wheel being displayed."""
