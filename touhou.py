@@ -38,7 +38,8 @@ class TouhouLauncher(object):
 		self.idle_timeout = configuration['idle_timeout']
 		self._wheel = WheelManager(wheel_data, config['root_wheel_id'])
 		self.background_surf = pygame.image.load(config['background'])
-		self._wheel_draw_offset = 0
+		self._wheel_y_offset = 0
+		self._anim = Animator()
 
 	def start(self):
 		while self.running:
@@ -57,8 +58,12 @@ class TouhouLauncher(object):
 					pygame.event.post(pygame.event.Event(QUIT))
 				elif event.key == self.binder.key_for('WHEEL_PREV'):
 					self._wheel.prev()
+					self._wheel_y_offset = self.get_wheel_offset(above=True)
+					self._anim.add_animation(300, self, '_wheel_y_offset', 0)
 				elif event.key == self.binder.key_for('WHEEL_NEXT'):
 					self._wheel.next()
+					self._wheel_y_offset = self.get_wheel_offset(above=False)
+					self._anim.add_animation(300, self, '_wheel_y_offset', 0)
 				elif event.key == self.binder.key_for('WHEEL_ADVANCE'):
 					self._wheel.advance()
 				elif event.key == self.binder.key_for('WHEEL_BACK'):
@@ -73,6 +78,7 @@ class TouhouLauncher(object):
 
 	def update(self):
 		if self.game_mode == M_CONTROL:
+			self._anim.pulse()
 			self.draw_screen()
 			if pygame.time.get_ticks() - self.idle_timer >= self.idle_timeout:
 				self.start_movie()
@@ -81,7 +87,6 @@ class TouhouLauncher(object):
 				self.draw_idle_message()
 			pygame.display.flip()
 			self.clock.tick(30)
-
 		elif self.game_mode == M_VIDEO:
 			if not self.gui_movie.get_busy():
 				pygame.event.post(pygame.event.Event(USEREVENT, code=E_MOVIECOMPLETE))
@@ -103,17 +108,25 @@ class TouhouLauncher(object):
 		self.draw_other_items(coords, above=True)
 		self.draw_other_items(coords, above=False)
 		
+	def get_wheel_offset(self, above=False):
+		if above:
+			txt = self.make_text_surface(" ", size=self.config['menu_item_font_size'])
+			return -(txt.get_rect().height + config['menu_item_vertical_spacing'])
+		else:
+			txt = self.make_text_surface(" ", size=self.config['menu_item_font_size_selected'])
+			return txt.get_rect().height + config['menu_item_vertical_spacing']
+		
 	def draw_selected_item(self):
 		text = self.make_text_surface(self._wheel.get_item_title(), size=self.config['menu_item_font_size_selected'])
 		textr = text.get_rect()
 		x, y = self.get_selected_coords(textr)
+		y += self._wheel_y_offset
 		self.blit_surface(text, x, y)
 		return pygame.Rect((x, y), textr.size)
 	
 	def get_selected_coords(self, selrect):
 		x = round((self.config['menu_percent_width']/100.0) * self.get_width())
 		y = round(((self.config['menu_main_item_percent_height']/100.0) * self.get_height()) - (selrect.height / 2.0))
-		y += self._wheel_draw_offset
 		return (x, y)
 				
 	def draw_other_items(self, selrect, above=True):
@@ -129,10 +142,9 @@ class TouhouLauncher(object):
 			if above:
 				offset = ydiff
 			else:
-				offset = selrect.height + textr.height
+				offset = selrect.height + self.config['menu_item_vertical_spacing']
 			x = selrect.x
 			y = selrect.y + (offset + (ydiff * (num-1))) * direction_mult
-			y += self._wheel_draw_offset
 			if y + textr.height - 1 < 0 or y > self.get_height():
 				break
 			else:
@@ -178,7 +190,6 @@ class TouhouLauncher(object):
 
 	def make_text_surface(self, msg, font=pygame.font.get_default_font(), color=COLOR_WHITE, size=12, aa=True):
 		return pygame.font.Font(font, size).render(msg, aa, color)
-		
 		
 	def blit_surface(self, surface, x, y):
 		srect = surface.get_rect()
@@ -270,7 +281,14 @@ class Animator(object):
 					anim['end_hook']()
 			else:
 				active_anims.append(anim)
-		self._animations = active
+		self._animations = active_anims
+		
+	def _numeric_linear_tween(self, startval, curval, endval, progress):
+		d = endval - startval
+		newval = startval + (d * progress)
+		if (d > 0 and newval > endval) or (d < 0 and newval < endval) or d == 0:
+			newval = endval
+		return newval
 
 class WheelManager(object):
 	"""The wheel being displayed."""
