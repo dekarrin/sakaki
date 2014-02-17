@@ -38,6 +38,7 @@ class TouhouLauncher(object):
 		self.idle_timeout = configuration['idle_timeout']
 		self._wheel = WheelManager(wheel_data, config['root_wheel_id'])
 		self.background_surf = pygame.image.load(config['background'])
+		self._wheel_draw_offset = 0
 
 	def start(self):
 		while self.running:
@@ -72,7 +73,7 @@ class TouhouLauncher(object):
 
 	def update(self):
 		if self.game_mode == M_CONTROL:
-			self.draw_wheel()
+			self.draw_screen()
 			if pygame.time.get_ticks() - self.idle_timer >= self.idle_timeout:
 				self.start_movie()
 				self.game_mode = M_VIDEO
@@ -85,7 +86,7 @@ class TouhouLauncher(object):
 			if not self.gui_movie.get_busy():
 				pygame.event.post(pygame.event.Event(USEREVENT, code=E_MOVIECOMPLETE))
 
-	def draw_wheel(self):
+	def draw_screen(self):
 		self.draw_background()
 		self.draw_preview()
 		if self._wheel.subitems_count() > 0:
@@ -112,6 +113,7 @@ class TouhouLauncher(object):
 	def get_selected_coords(self, selrect):
 		x = round((self.config['menu_percent_width']/100.0) * self.get_width())
 		y = round(((self.config['menu_main_item_percent_height']/100.0) * self.get_height()) - (selrect.height / 2.0))
+		y += self._wheel_draw_offset
 		return (x, y)
 				
 	def draw_other_items(self, selrect, above=True):
@@ -130,7 +132,8 @@ class TouhouLauncher(object):
 				offset = selrect.height + textr.height
 			x = selrect.x
 			y = selrect.y + (offset + (ydiff * (num-1))) * direction_mult
-			if y < 0 or y + textr.height > self.get_height():
+			y += self._wheel_draw_offset
+			if y + textr.height - 1 < 0 or y > self.get_height():
 				break
 			else:
 				self.blit_surface(text, x, y)
@@ -215,10 +218,59 @@ class KeyBinder(object):
 	def key_for(self, action_index):
 		return self._bindings[action_index]
 
-class Timer(object):
-	"""Lets us add functions that are to be repeated."""
-	def __init__(object):
-		pass
+class Animator(object):
+	"""Lets us add tweening to properties."""
+	def __init__(self):
+		self._animations = []
+		
+	def add_animation(self, time, target, prop, end, delta_hook=None, end_hook=None):
+		"""Start animating a property of an object.
+
+		
+		time - amount of time in milliseconds that the animation should take.
+
+		target - the object that has a property to be animated.
+
+		prop - the name of the property to animate.
+
+		end - the ending value of the property; when it is equal to this
+		value, the animation is ended.
+
+		delta_hook - Function to change the prop. Must accept start_val,
+		current_val, end_val, and percent_complete (will be float from 0 to 1)
+		and return the new value of the property. It is assumed to be complete
+		if comparing the new value to end_value yields True. Leave as None to
+		assume numeric value for prop and end and let Animator do the math.
+
+		end_hook - Function to call when animation is complete. Leave as None to
+		call no function on completion.
+		"""
+		start = pygame.time.get_ticks()
+		startval = getattr(target, prop)
+		if delta_hook is None:
+			delta_hook = self._numeric_linear_tween
+		anim = {'start_time': start, 'duration': time, 'target': target,
+				'prop': prop, 'start': startval, 'end': end,
+				'delta_hook': delta_hook, 'end_hook': end_hook}
+		self._animations.append(anim)
+		
+	def pulse(self):
+		"""Execute all animations."""
+		active_anims = []
+		for anim in self._animations:
+			time = pygame.time.get_ticks() - anim['start_time']
+			progress = time / float(anim['duration'])
+			start_val = anim['start']
+			current_val = getattr(anim['target'], anim['prop'])
+			end_val = anim['end']
+			new_val = anim['delta_hook'](start_val, current_val, end_val, progress)
+			setattr(anim['target'], anim['prop'], new_val)
+			if new_val == end_val:
+				if anim['end_hook'] is not None:
+					anim['end_hook']()
+			else:
+				active_anims.append(anim)
+		self._animations = active
 
 class WheelManager(object):
 	"""The wheel being displayed."""
