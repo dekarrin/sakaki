@@ -1,6 +1,6 @@
 import pygame
 
-class Wheel(pygame.sprite.DirtySprite):
+class Wheel():
 	"""Hold all wheel data and display the current wheel."""
 
 	def __init__(self, wheel_data, root_wheel_id, size, spacing, font_normal, font_select):
@@ -9,11 +9,18 @@ class Wheel(pygame.sprite.DirtySprite):
 		
 		wheel_data - All data read from the wheels dir.
 		
-		root_wh
+		root_wheel_id - The id of the wheel that should be shown at start.
 		
+		size - tuple containing width and height.
+		
+		spacing - number of pixels between each menu item.
+		
+		font_normal - tuple containing name of font face and size of font for unselected
+		menu items.
+		
+		font_select - same as above, but for the selected font.
 		"""
 		super(Wheel, self).__init__()
-		self.image = pygame.Surface(
 		self._current = None
 		self._position = 0
 		self._root_wheel_id = root_wheel_id
