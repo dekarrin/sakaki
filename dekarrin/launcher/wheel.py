@@ -94,6 +94,10 @@ class Wheel(object):
 		else:
 			return None
 
+	def _recreate_sprites(self):
+		self.group.empty()
+		
+
 class WheelItem(pygame.sprite.DirtySprite):
 	"""Display a single item from the wheel."""
 
