@@ -1,6 +1,6 @@
 import pygame
 
-class Wheel():
+class Wheel(object):
 	"""Hold all wheel data and display the current wheel."""
 
 	def __init__(self, wheel_data, root_wheel_id, size, spacing, font_normal, font_select):
@@ -20,11 +20,11 @@ class Wheel():
 		
 		font_select - same as above, but for the selected font.
 		"""
-		super(Wheel, self).__init__()
 		self._current = None
 		self._position = 0
 		self._root_wheel_id = root_wheel_id
-		self._wheels = dict()
+		self._wheels = {}
+		self.group = pygame.sprite.RenderUpdates()
 		for wheel in wheel_data:
 			self._wheels[wheel['id']] = wheel
 		self._init_wheels()
@@ -61,14 +61,17 @@ class Wheel():
 	def change(self, wheel_id):
 		self._current = self._wheels[wheel_id]
 		self._position = 0
+		self._recreate_sprites()
 
 	def next(self):
 		if self.subitems_count() > 0:
 			self._position = (self._position + 1) % len(self._current['items'])
+			self._reposition_sprites()
 
 	def prev(self):
 		if self.subitems_count() > 0:
 			self._position = (self._position - 1) % len(self._current['items'])
+			self._reposition_sprites()
 
 	def advance(self):
 		if self.subitems_count() > 0:
@@ -90,3 +93,65 @@ class Wheel():
 			return self._current['items'][pos]['title']
 		else:
 			return None
+
+class WheelItem(pygame.sprite.DirtySprite):
+	"""Display a single item from the wheel."""
+
+	def __init__(self, text, color, font):
+		"""Creates a new WheelItem.
+		
+		text - the text that the item should display.
+		color - the color of the text.
+		font - tuple that contains name of font face and font size.
+		"""
+		self.image = pygame.font.Font(font[0], font[1]).render(text, True, color)
+		self.rect = self.image.get_rect()
+		self._oldx = self.rect.x
+		self._oldy = self.rect.y
+		self._oldface = font[0]
+		self._oldsize = font[1]
+		self._oldtext = text
+		self._oldcolor = color
+		self._is_recooked = False
+		self.dirty = 1
+
+	def update(self):
+		if self._is_moved() or self._is_recooked:
+			self.dirty = 1
+			self._oldx = self.rect.x
+			self._oldy = self.rect.y
+		
+	def set_font_face(self, face):
+		if self._oldface != face:
+			self._oldface = face
+			self._cook()
+
+	def set_font_size(self, size):
+		if self._oldsize != size:
+			self._oldsize = size
+			self._cook()
+
+	def set_color(self, color):
+		if self._oldcolor != color:
+			self._oldcolor = color
+			self._cook()
+
+	def set_text(self, text):
+		if self._oldtet != text
+			self._oldtext = text
+			self._cook()
+
+	def _cook(self):
+		currx = self.rect.x
+		curry = self.rect.y
+		self.image = pygame.fong.Font(self._oldface, self._oldsize).render(self._oldtext, True, self._oldcolor)
+		self.rect = self.image.get_rect()
+		self.rect.x = currx
+		self.rect.y = curry
+		self._is_recooked = True
+
+	def _is_moved():
+		movedy = (self._oldy is not self.rect.y)
+		movedx = (self._oldx is not self.rect.x)
+		return movedy or moved x
+
