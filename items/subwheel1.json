@@ -2,7 +2,7 @@
 
 {
 	"title": "Launch Gedit!",
-	"command": "echo \"hello there!\" | gedit",
+	"command": "gedit",
 	"parent": "wheel-1"
 }
 

@@ -1,6 +1,6 @@
 #os.environ['SDL_VIDEODRIVER'] = 'windib'
 
-import pygame, sys
+import pygame, sys, subprocess
 from pygame.locals import *
 
 import dekarrin.file.lines
@@ -20,14 +20,17 @@ COLOR_BLACK = pygame.Color(0, 0, 0)
 
 class TouhouLauncher(object):
 
-	def __init__(self, configuration, video_list, wheel_data, item_data, key_bindings):
+	def __init__(self, config, video_list, wheel_data, item_data, key_bindings):
 		self.binder = KeyBinder()
 		self.binder.bind_all(key_bindings)
-		self.config = configuration
+		self.config = config
 		pygame.init()
-		resolution = (configuration['resolution_width'], configuration['resolution_height']);
 		self.clock = pygame.time.Clock()
-		self.window_surface = pygame.display.set_mode(resolution)
+		resolution = (config['resolution_width'], config['resolution_height']);
+		display_flags = 0
+		if config['fullscreen'].lower() == 'on'.lower():
+			display_flags = pygame.FULLSCREEN
+		self.window_surface = pygame.display.set_mode(resolution, display_flags)
 		self.game_mode = M_CONTROL
 		self.idle_timer = 0
 		self.gui_movie = None
@@ -35,7 +38,7 @@ class TouhouLauncher(object):
 		self.msgfont = pygame.font.Font(pygame.font.get_default_font(), 12)
 		self.videos = video_list
 		self.videos_position = 0
-		self.idle_timeout = configuration['idle_timeout']
+		self.idle_timeout = config['idle_timeout']
 		self._wheel = WheelManager(item_data, wheel_data, config['root_wheel_id'])
 		back_img = pygame.image.load(config['background'])
 		self.background_surf = pygame.transform.scale(back_img, resolution)
@@ -66,7 +69,11 @@ class TouhouLauncher(object):
 					self._wheel_y_offset = self.get_wheel_offset(above=False)
 					self._anim.add_animation(300, self, '_wheel_y_offset', 0)
 				elif event.key == self.binder.key_for('WHEEL_ADVANCE'):
-					self._wheel.advance()
+					cmd = self._wheel.get_command()
+					if cmd is not None:
+						subprocess.call(cmd)
+					else:
+						self._wheel.advance()
 				elif event.key == self.binder.key_for('WHEEL_BACK'):
 					self._wheel.backtrack()
 			elif event.type == QUIT:
@@ -369,6 +376,14 @@ class WheelManager(object):
 			if self._current['items'][self._position]['type'] == 'wheel':
 				id = self._current['items'][self._position]['id']
 				self.change(id)
+
+	def get_command(self):
+		cmd = None
+		if self.subitems_count() > 0:
+			if self._current['items'][self._position]['type'] == 'item':
+				cmd = self._current['items'][self._position]['command']
+		return cmd
+
 	def backtrack(self):
 		"""Go to the previous wheel."""
 		id = self._current['parent']['id']
