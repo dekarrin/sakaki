@@ -37,7 +37,8 @@ class TouhouLauncher(object):
 		self.videos_position = 0
 		self.idle_timeout = configuration['idle_timeout']
 		self._wheel = WheelManager(item_data, wheel_data, config['root_wheel_id'])
-		self.background_surf = pygame.image.load(config['background'])
+		back_img = pygame.image.load(config['background'])
+		self.background_surf = pygame.transform.scale(back_img, resolution)
 		self._wheel_y_offset = 0
 		self._anim = Animator()
 
@@ -92,13 +93,17 @@ class TouhouLauncher(object):
 				pygame.event.post(pygame.event.Event(USEREVENT, code=E_MOVIECOMPLETE))
 
 	def draw_screen(self):
+		self.draw_backdrop()
 		self.draw_background()
 		self.draw_preview()
 		if self._wheel.subitems_count() > 0:
 			self.draw_items()
 
+	def draw_backdrop(self):
+		self.window_surface.fill(pygame.Color(0, 0, 0))
+
 	def draw_background(self):
-		self.window_surface.blit(self.background_surf, self.background_surf.get_rect())
+		self.window_surface.blit(self.background_surf, self.window_surface.get_rect())
 
 	def draw_preview(self):
 		pass
@@ -320,6 +325,7 @@ class WheelManager(object):
 			if item['parent'] == wheel_id:
 				if 'items' not in wheel:
 					self._wheels[wheel_id]['items'] = list()
+				item['type'] = 'item'
 				self._wheels[wheel_id]['items'].append(item)
 				to_remove.append(item)
 		for item in to_remove:
@@ -337,6 +343,7 @@ class WheelManager(object):
 			if wheel_id != self._root_wheel_id:
 				if 'items' not in self._wheels[parent_id]:
 					self._wheels[parent_id]['items'] = list()
+				wheel['type'] = 'wheel'
 				self._wheels[parent_id]['items'].append(wheel)
 				self._assign_subwheels(parent_id)
 		else:
@@ -359,9 +366,9 @@ class WheelManager(object):
 
 	def advance(self):
 		if self.subitems_count() > 0:
-			id = self._current['items'][self._position]['id']
-			self.change(id)
-	
+			if self._current['items'][self._position]['type'] == 'wheel':
+				id = self._current['items'][self._position]['id']
+				self.change(id)
 	def backtrack(self):
 		"""Go to the previous wheel."""
 		id = self._current['parent']['id']
