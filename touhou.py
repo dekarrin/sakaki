@@ -20,7 +20,7 @@ COLOR_BLACK = pygame.Color(0, 0, 0)
 
 class TouhouLauncher(object):
 
-	def __init__(self, configuration, video_list, wheel_data, key_bindings):
+	def __init__(self, configuration, video_list, wheel_data, item_data, key_bindings):
 		self.binder = KeyBinder()
 		self.binder.bind_all(key_bindings)
 		self.config = configuration
@@ -36,7 +36,7 @@ class TouhouLauncher(object):
 		self.videos = video_list
 		self.videos_position = 0
 		self.idle_timeout = configuration['idle_timeout']
-		self._wheel = WheelManager(wheel_data, config['root_wheel_id'])
+		self._wheel = WheelManager(item_data, wheel_data, config['root_wheel_id'])
 		self.background_surf = pygame.image.load(config['background'])
 		self._wheel_y_offset = 0
 		self._anim = Animator()
@@ -293,26 +293,40 @@ class Animator(object):
 class WheelManager(object):
 	"""The wheel being displayed."""
 
-	def __init__(self, wheel_data, root_wheel_id):
+	def __init__(self, item_data, wheel_data, root_wheel_id):
 		self._current = None
 		self._position = 0
 		self._root_wheel_id = root_wheel_id
 		self._wheels = dict()
 		for wheel in wheel_data:
 			self._wheels[wheel['id']] = wheel
-		self._init_wheels()
+		self._init_wheels(item_data)
 		self.change_to_root()
 
-	def _init_wheels(self):
+	def _init_wheels(self, item_data):
 		for id in self._wheels:
-			self._assign_subitems(id)
+			self._assign_subwheels(id)
+			item_data = self._assign_subitems(id, item_data)
 		for id in self._wheels:
 			if 'set' in self._wheels[id]:
 				del self._wheels[id]['set']
 			if 'items' not in self._wheels[id]:
 				self._wheels[id]['items'] = list()
 				
-	def _assign_subitems(self, wheel_id):
+	def _assign_subitems(self, wheel_id, item_data):
+		wheel = self._wheels[wheel_id]
+		to_remove = list()
+		for item in item_data:
+			if item['parent'] == wheel_id:
+				if 'items' not in wheel:
+					self._wheels[wheel_id]['items'] = list()
+				self._wheels[wheel_id]['items'].append(item)
+				to_remove.append(item)
+		for item in to_remove:
+			item_data.remove(item)		
+		return item_data
+
+	def _assign_subwheels(self, wheel_id):
 		wheel = self._wheels[wheel_id]
 		if 'set' in wheel:
 				return
@@ -324,7 +338,7 @@ class WheelManager(object):
 				if 'items' not in self._wheels[parent_id]:
 					self._wheels[parent_id]['items'] = list()
 				self._wheels[parent_id]['items'].append(wheel)
-				self._assign_subitems(parent_id)
+				self._assign_subwheels(parent_id)
 		else:
 			print "Warning! Wheel '%s' links to nonexistant parent '%s'. Wheel not linked." % (wheel_id, parent_id)
 
@@ -347,7 +361,7 @@ class WheelManager(object):
 		if self.subitems_count() > 0:
 			id = self._current['items'][self._position]['id']
 			self.change(id)
-
+	
 	def backtrack(self):
 		"""Go to the previous wheel."""
 		id = self._current['parent']['id']
@@ -376,8 +390,14 @@ for wheel_item in os.listdir(config['wheels_dir']):
 	wheel_data.extend(json.load(jfile))
 	jfile.close()
 
+item_data = []
+for item_item in os.listdir(config['items_dir']):
+	jfile = open(os.path.join(config['items_dir'], item_item))
+	item_data.extend(json.load(jfile))
+	jfile.close()
+
 bindings_reader = dekarrin.file.lines.ConfigReader(config['key_bindings'])
 key_bindings = bindings_reader.read()
 
-game = TouhouLauncher(config, vids, wheel_data, key_bindings)
+game = TouhouLauncher(config, vids, wheel_data, item_data, key_bindings)
 game.start()

@@ -1,0 +1,9 @@
+[
+
+{
+	"title": "Launch Gedit!",
+	"command": "echo \"hello there!\" | gedit",
+	"parent": "wheel-1"
+}
+
+]
