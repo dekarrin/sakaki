@@ -8,7 +8,7 @@ import dekarrin.file.lines
 import json
 import os
 
-CONFIG_FILE = 'launcher.cfg'
+CONFIG_FILE = 'sakaki.cfg'
 
 M_CONTROL = 0
 M_VIDEO = 1
