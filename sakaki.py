@@ -156,7 +156,7 @@ class SakakiLauncher(object):
 			self.draw_items()
 
 	def draw_backdrop(self):
-		self.window_surface.fill(pygame.Color(0, 0, 0))
+		self.window_surface.fill(COLOR_BLACK)
 
 	def draw_background(self):
 		self.window_surface.blit(self.background_surf, self.window_surface.get_rect())
