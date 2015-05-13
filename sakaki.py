@@ -18,7 +18,7 @@ E_MOVIECOMPLETE = 1
 COLOR_WHITE = pygame.Color(255, 255, 255)
 COLOR_BLACK = pygame.Color(0, 0, 0)
 
-class TouhouLauncher(object):
+class SakakiLauncher(object):
 
 	def __init__(self, config, video_list, wheel_data, item_data, key_bindings):
 		self.binder = KeyBinder()
@@ -421,5 +421,5 @@ for item_item in os.listdir(config['items_dir']):
 bindings_reader = dekarrin.file.lines.ConfigReader(config['key_bindings'])
 key_bindings = bindings_reader.read()
 
-game = TouhouLauncher(config, vids, wheel_data, item_data, key_bindings)
+game = SakakiLauncher(config, vids, wheel_data, item_data, key_bindings)
 game.start()
