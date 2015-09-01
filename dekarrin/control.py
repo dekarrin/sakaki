@@ -139,8 +139,32 @@ class AutoHotKeyRemapper(object):
 			K_F15:			'F15',
 			K_SCROLLOCK:	'ScrollLock',
 			K_CAPSLOCK:		'CapsLock',
-			
-		button
+			K_RSHIFT:		'RShift',
+			K_LSHIFT:		'LShift',
+			K_RCTRL:		'RCtrl',
+			K_LCTRL:		'LCtrl',
+			K_RALT:			'RAlt',
+			K_LALT:			'LAlt'
+			K_RSUPER:		'RWin',
+			K_LSUPER:		'LWin',
+			K_HELP:			'Help',
+			K_PRINT:		'PrintScreen',
+			K_BREAK:		'CtrlBreak',
+			K_MENU:			'AppsKey'
+		}
+		modifier_map = {
+			KMOD_LSHIFT:	'<+',
+			KMOD_RSHIFT:	'>+',
+			KMOD_SHIFT:		'+',
+			KMOD_LCTRL:		'<^',
+			KMOD_RCTRL:		'>^',
+			KMOD_CTRL:		'^',
+			KMOD_LALT:		'<!',
+			KMOD_RALT:		'>!',
+			KMOD_ALT:		'!',
+		}
+		self._buttons = buttons_map
+		self._modifiers = modifier_map
 		
 	def output_rules(self, rules):
 		with open('remapping.ahk', 'w') as map_file:
