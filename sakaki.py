@@ -11,16 +11,19 @@ import dekarrin.file.lines
 
 import json
 
+# pygame is missing SDL_APPxxx bit flags:
+pygame.APPINPUTFOCUS = 0x02
+
 CONFIG_FILE = 'launcher.cfg'
 DEFAULTS_CONFIG_FILE = CONFIG_FILE + '.default'
 
 M_CONTROL = 0
 M_VIDEO = 1
-M_APP = 2
 
 E_MOVIECOMPLETE = 1
 
 COLOR_WHITE = pygame.Color(255, 255, 255)
+COLOR_GRAY = pygame.Color(128, 128, 128)
 COLOR_BLACK = pygame.Color(0, 0, 0)
 
 class SakakiLauncher(object):
@@ -47,20 +50,26 @@ class SakakiLauncher(object):
 		self._wheel = WheelManager(item_data, wheel_data, config['root_wheel_id'])
 		back_img = pygame.image.load(config['background'])
 		self.background_surf = pygame.transform.scale(back_img, resolution)
+		self.blur_surf = pygame.Surface(resolution)
+		self.blur_surf.fill(COLOR_GRAY)
+		self.blur_surf.set_alpha(180)
 		self._wheel_y_offset = 0
 		self._anim = Animator()
 		self._app_process = None
 		self._app_name = None
+		self.is_active = True
 
 	def start(self):
 		while self.running:
 			self.update()
-			if self.game_mode != M_APP:
-				# poll after update so quit causes exit before next update
-				self.poll_events()
+			# poll after update so quit causes exit before next update
+			for event in pygame.event.get():
+				self._handle_event(event)
+			# wait until we are active again:
+			while not self.is_active:
+				self._handle_event(pygame.event.wait())
 
-	def poll_events(self):
-		for event in pygame.event.get():
+	def _handle_event(self, event):
 			if event.type == USEREVENT:
 				self._handle_user_event(event)
 			elif event.type == KEYDOWN:
@@ -79,13 +88,20 @@ class SakakiLauncher(object):
 				elif event.key == self.binder.key_for('WHEEL_ADVANCE'):
 					cmd = self._wheel.get_command()
 					if cmd is not None:
+						self.switch_display_to_windowed()
 						self._app_name = cmd.split(" ")[0]
-						self._app_process = subprocess.Popen(cmd.split(" "))
-						self.game_mode = M_APP
+						self._app_process = subprocess.Popen(cmd.split(" "), shell=True)
 					else:
 						self._wheel.advance()
 				elif event.key == self.binder.key_for('WHEEL_BACK'):
 					self._wheel.backtrack()
+			elif event.type == pygame.ACTIVEEVENT:
+				if event.state & pygame.APPINPUTFOCUS:
+					self.is_active = bool(event.gain)
+					if self.is_active:
+						self.switch_display_to_configured()
+					else:
+						self.update()
 			elif event.type == QUIT:
 			# check quit last so exit is not followed by pygame calls
 				self.exit()
@@ -103,15 +119,27 @@ class SakakiLauncher(object):
 				self.game_mode = M_VIDEO
 			else:
 				self.draw_idle_message()
+			if not self.is_active:
+				self.draw_blur_box()
 			pygame.display.flip()
 			self.clock.tick(30)
 		elif self.game_mode == M_VIDEO:
 			if not self.gui_movie.get_busy():
 				pygame.event.post(pygame.event.Event(USEREVENT, code=E_MOVIECOMPLETE))
-		elif self.game_mode == M_APP:
-			self.draw_app_screen()
-			pygame.display.flip()
-			self.clock.tick(30)
+
+	def draw_blur_box(self):
+		self.window_surface.blit(self.blur_surf, self.window_surface.get_rect())
+		
+
+	def switch_display_to_windowed(self):
+		if self.config['fullscreen'].lower() == 'on'.lower():
+			res = pygame.display.get_surface().get_rect().size
+			pygame.display.set_mode(res, 0)
+
+	def switch_display_to_configured(self):
+		if self.config['fullscreen'].lower() == 'on'.lower():
+			res = pygame.display.get_surface().get_rect().size
+			pygame.display.set_mode(res, pygame.FULLSCREEN)
 
 	def draw_app_screen(self):
 		self.draw_backdrop()
