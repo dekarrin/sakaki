@@ -66,7 +66,7 @@ class ControlSchemeReader(_LineReader):
 		super(ControlSchemeReader, self).__init__(file)
 
 	def _blank_result(self):
-		return {'attributes': dict(), 'productions': list()}
+		return {'attributes': dict(), 'rules': list()}
 
 	def _read_line(self, line):
 		if '=' in line:
@@ -90,14 +90,14 @@ class ControlSchemeReader(_LineReader):
 					self.result['attributes'][name] = value
 
 	def _read_production_line(self, line):
-		rule, productions_str = line.split("->", 1)
-		rule = rule.strip()
+		key, productions_str = line.split("->", 1)
+		key = key.strip()
 		productions_str = productions_str.strip()
-		raw_rule_keys = rule.split(' ')
-		rule_keys = []
-		for key in raw_rule_keys:
-			if key.strip() is not "":
-				rule_keys.append(key.strip())
+		raw_key_keys = rule.split(' ')
+		keys = []
+		for k in raw_rule_keys:
+			if k.strip() is not "":
+				keys.append(k.strip())
 		prod_lists = productions_str.split(',')
 		productions = []
 		for prod_list in prod_lists:
@@ -108,6 +108,7 @@ class ControlSchemeReader(_LineReader):
 				if key.strip() is not "":
 					prod_keys.append(key.strip())
 			productions.append(prod_keys)
+		self.result['rules'].append((keys, productions))
 		
 class ListReader(_LineReader):
 	def __init__(self, file):
