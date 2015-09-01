@@ -16,10 +16,10 @@ class ControlSchemeManager(object):
 		self._schemes[name] = []
 		for keys, prods in rules:
 			rule = {}
-			rule['key'] = _create_sequence_step(keys)
+			rule['key'] = self._create_sequence_step(keys)
 			rule['productions'] = list()
 			for p in prods:
-				rule['productions'].append(_create_sequence_step(p))
+				rule['productions'].append(self._create_sequence_step(p))
 			self._schemes[name].append(rule)
 			
 	def remap_controls(self, name):
@@ -34,7 +34,7 @@ class ControlSchemeManager(object):
 			self._translator.end()
 			self._controls_remapped = False
 	
-	def _create_sequence_step(keys):
+	def _create_sequence_step(self, keys):
 		step = {'button': None, 'modifiers': list()}
 		for k in keys:
 			if k[:2] == "K_":
@@ -162,7 +162,7 @@ class AutoHotKeyRemapper(object):
 			K_RCTRL:		'RCtrl',
 			K_LCTRL:		'LCtrl',
 			K_RALT:			'RAlt',
-			K_LALT:			'LAlt'
+			K_LALT:			'LAlt',
 			K_RSUPER:		'RWin',
 			K_LSUPER:		'LWin',
 			K_HELP:			'Help',
@@ -181,7 +181,7 @@ class AutoHotKeyRemapper(object):
 			KMOD_RALT:		'>!',
 			KMOD_ALT:		'!',
 		}
-		self._buttons = buttons_map
+		self._buttons = button_map
 		self._modifiers = modifier_map
 		
 	def start(self, rules):

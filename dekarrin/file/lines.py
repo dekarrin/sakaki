@@ -93,9 +93,9 @@ class ControlSchemeReader(_LineReader):
 		key, productions_str = line.split("->", 1)
 		key = key.strip()
 		productions_str = productions_str.strip()
-		raw_key_keys = rule.split(' ')
+		raw_key_keys = key.split(' ')
 		keys = []
-		for k in raw_rule_keys:
+		for k in raw_key_keys:
 			if k.strip() is not "":
 				keys.append(k.strip())
 		prod_lists = productions_str.split(',')

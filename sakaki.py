@@ -499,7 +499,7 @@ for item_item in os.listdir(config['items_dir']):
 control_schemes = []
 for control_scheme_item in os.listdir(config['controls_dir']):
 	control_scheme_reader = dekarrin.file.lines.ControlSchemeReader(os.path.join(config['controls_dir'], control_scheme_item))
-	control_scheme_data.append(control_scheme_reader.read())
+	control_schemes.append(control_scheme_reader.read())
 
 bindings_reader = dekarrin.file.lines.ConfigReader(config['key_bindings'])
 key_bindings = bindings_reader.read()
