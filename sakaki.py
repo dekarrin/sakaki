@@ -8,6 +8,7 @@ import pygame, sys, subprocess
 from pygame.locals import *
 
 import dekarrin.file.lines
+import dekarrin.control
 
 import json
 
@@ -28,7 +29,7 @@ COLOR_BLACK = pygame.Color(0, 0, 0)
 
 class SakakiLauncher(object):
 
-	def __init__(self, config, video_list, wheel_data, item_data, key_bindings):
+	def __init__(self, config, video_list, wheel_data, item_data, key_bindings, control_schemes):
 		self.binder = KeyBinder()
 		self.binder.bind_all(key_bindings)
 		self.config = config
@@ -58,6 +59,7 @@ class SakakiLauncher(object):
 		self._app_process = None
 		self._app_name = None
 		self.is_active = True
+		self._scheme_manager = dekarrin.control.ControlSchemeManager(control_schemes)
 
 	def start(self):
 		while self.running:
@@ -70,44 +72,46 @@ class SakakiLauncher(object):
 				self._handle_event(pygame.event.wait())
 
 	def _handle_event(self, event):
-			if event.type == USEREVENT:
-				self._handle_user_event(event)
-			elif event.type == KEYDOWN:
-				self.idle_timer = pygame.time.get_ticks()
-				self.exit_movie_mode()
-				if event.key == self.binder.key_for('LAUNCHER_EXIT'):
-					pygame.event.post(pygame.event.Event(QUIT))
-				elif event.key == self.binder.key_for('WHEEL_PREV'):
-					self._wheel.prev()
-					self._wheel_y_offset = self.get_wheel_offset(above=True)
-					self._anim.add_animation(300, self, '_wheel_y_offset', 0)
-				elif event.key == self.binder.key_for('WHEEL_NEXT'):
-					self._wheel.next()
-					self._wheel_y_offset = self.get_wheel_offset(above=False)
-					self._anim.add_animation(300, self, '_wheel_y_offset', 0)
-				elif event.key == self.binder.key_for('WHEEL_ADVANCE'):
-					cmd = self._wheel.get_command()
-					if cmd is not None:
-						self.switch_display_to_windowed()
-						self._app_name = cmd.split(" ")[0]
-						self._app_process = subprocess.Popen(cmd.split(" "), shell=True)
-					else:
-						self._wheel.advance()
-				elif event.key == self.binder.key_for('WHEEL_BACK'):
-					self._wheel.backtrack()
-			elif event.type == pygame.ACTIVEEVENT:
-				if event.state & pygame.APPINPUTFOCUS:
-					self.is_active = bool(event.gain)
-					if self.is_active:
-						self.idle_timer = pygame.time.get_ticks()
-						self._anim.resume()
-						self.switch_display_to_configured()
-					else:
-						self._anim.suspend()
-						self.update()
-			elif event.type == QUIT:
-			# check quit last so exit is not followed by pygame calls
-				self.exit()
+		if event.type == USEREVENT:
+			self._handle_user_event(event)
+		elif event.type == KEYDOWN:
+			self.idle_timer = pygame.time.get_ticks()
+			self.exit_movie_mode()
+			if event.key == self.binder.key_for('LAUNCHER_EXIT'):
+				pygame.event.post(pygame.event.Event(QUIT))
+			elif event.key == self.binder.key_for('WHEEL_PREV'):
+				self._wheel.prev()
+				self._wheel_y_offset = self.get_wheel_offset(above=True)
+				self._anim.add_animation(300, self, '_wheel_y_offset', 0)
+			elif event.key == self.binder.key_for('WHEEL_NEXT'):
+				self._wheel.next()
+				self._wheel_y_offset = self.get_wheel_offset(above=False)
+				self._anim.add_animation(300, self, '_wheel_y_offset', 0)
+			elif event.key == self.binder.key_for('WHEEL_ADVANCE'):
+				cmd = self._wheel.get_command()
+				if cmd is not None:
+					scheme = self._wheel.get_control_scheme()
+					self._scheme_manager.start(scheme)
+					self.switch_display_to_windowed()
+					self._app_name = cmd.split(" ")[0]
+					self._app_process = subprocess.Popen(cmd.split(" "), shell=True)
+				else:
+					self._wheel.advance()
+			elif event.key == self.binder.key_for('WHEEL_BACK'):
+				self._wheel.backtrack()
+		elif event.type == pygame.ACTIVEEVENT:
+			if event.state & pygame.APPINPUTFOCUS:
+				self.is_active = bool(event.gain)
+				if self.is_active:
+					self.idle_timer = pygame.time.get_ticks()
+					self._anim.resume()
+					self.switch_display_to_configured()
+				else:
+					self._anim.suspend()
+					self.update()
+		elif event.type == QUIT:
+		# check quit last so exit is not followed by pygame calls
+			self.exit()
 
 	def _handle_user_event(self, event):
 		if event.code == E_MOVIECOMPLETE:
@@ -133,7 +137,6 @@ class SakakiLauncher(object):
 	def draw_blur_box(self):
 		self.window_surface.blit(self.blur_surf, self.window_surface.get_rect())
 		
-
 	def switch_display_to_windowed(self):
 		if self.config['fullscreen'].lower() == 'on'.lower():
 			res = pygame.display.get_surface().get_rect().size
@@ -396,6 +399,8 @@ class WheelManager(object):
 				if 'items' not in wheel:
 					self._wheels[wheel_id]['items'] = list()
 				item['type'] = 'item'
+				if 'control_scheme' not in item:
+					item['control_scheme'] = None
 				self._wheels[wheel_id]['items'].append(item)
 				to_remove.append(item)
 		for item in to_remove:
@@ -447,6 +452,13 @@ class WheelManager(object):
 				cmd = self._current['items'][self._position]['command']
 		return cmd
 
+	def get_control_scheme(self):
+		control_scheme = None
+		if self.subitems_count() > 0:
+			if self._current['items'][self._postion]['type'] == 'item':
+				control_scheme = self._current['items'][self._position]['control_scheme']
+		return control_scheme
+
 	def backtrack(self):
 		"""Go to the previous wheel."""
 		id = self._current['parent']['id']
@@ -484,8 +496,13 @@ for item_item in os.listdir(config['items_dir']):
 	item_data.extend(json.load(jfile))
 	jfile.close()
 
+control_schemes = []
+for control_scheme_item in os.listdir(config['controls_dir']):
+	control_scheme_reader = dekarrin.file.lines.ControlSchemeReader(os.path.join(config['controls_dir'], control_scheme_item))
+	control_scheme_data.append(control_scheme_reader.read())
+
 bindings_reader = dekarrin.file.lines.ConfigReader(config['key_bindings'])
 key_bindings = bindings_reader.read()
 
-game = SakakiLauncher(config, vids, wheel_data, item_data, key_bindings)
+game = SakakiLauncher(config, vids, wheel_data, item_data, key_bindings, control_schemes)
 game.start()

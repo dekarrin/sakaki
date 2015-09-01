@@ -4,10 +4,13 @@ from pygame.locals import *
 class ControlSchemeManager(object):
 	"""Handles dynamic key remapping for particular apps"""
 
-	def __init__(self):
+	def __init__(self, allSchemes):
 		self._current = None
 		self._schemes = dict()
 		self._translator = AutoHotKeyRemapper()
+		self._controls_remapped = False
+		for scheme in allSchemes:
+			self.add_scheme(scheme['attributes']['name'], scheme['rules'])
 
 	def add_scheme(self, name, rules):
 		self._schemes[name] = []
@@ -20,10 +23,16 @@ class ControlSchemeManager(object):
 			self._schemes[name].append(rule)
 			
 	def remap_controls(self, name):
-		self._translator.start(self._schemes[name])
+		if name in self._schemes:
+			if self._controls_remapped:
+				self.restore_controls()
+			self._controls_remapped = True
+			self._translator.start(self._schemes[name])
 		
 	def restore_controls(self):
-		self._translator.end()
+		if self._controls_remapped:
+			self._translator.end()
+			self._controls_remapped = False
 	
 	def _create_sequence_step(keys):
 		step = {'button': None, 'modifiers': list()}
