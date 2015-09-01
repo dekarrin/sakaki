@@ -181,7 +181,7 @@ class AutoHotKeyRemapper(object):
 				f.write(self._combo_to_ahk(r['key']) + "::\n")
 				for p in r['productions']:
 					f.write(self._combo_to_ahk(p) + "\n")
-				f.write("\n")
+				f.write("Return\n\n")
 		self._ahk_proc = subprocess.Popen([self._ahk_command, 'remapping.ahk'])
 		
 	def end(self):
