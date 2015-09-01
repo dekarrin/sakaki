@@ -7,7 +7,7 @@ leading and trailing whitespace. If the first non-whitespace character is '#',
 the line is considered a comment and is ignored. If the stripped line is empty,
 the line is considered empty and is ignored.
 
-Some file formats consist of different values Double quotes may be used to
+Some file formats consist of different values. Double quotes may be used to
 encapsulate leading and trailing whitespace that is to be preserved.
 """
 
@@ -60,6 +60,54 @@ class ConfigReader(_LineReader):
 					self.result[name] = float(value)
 				except ValueError:
 					self.result[name] = value
+
+class ControlSchemeReader(_LineReader):
+	def __init__(self, file):
+		super(ControlSchemeReader, self).__init__(file)
+
+	def _blank_result(self):
+		return {'attributes': dict(), 'productions': list()}
+
+	def _read_line(self, line):
+		if '=' in line:
+			self._read_attr_line(line)
+		elif '->' in line:
+			self._read_production_line(line)
+
+	def _read_attr_line(self, line):
+		name, value = line.split('=', 1)
+		name = name.strip()
+		value = value.strip()
+		if value[0] == '"' and value[-1] == '"':
+			self.result['attributes'][name] = value[1:-1]
+		else:
+			try:
+				self.result['attributes'][name] = int(value)
+			except ValueError:
+				try:
+					self.result['attributes'][name] = float(value)
+				except ValueError:
+					self.result['attributes'][name] = value
+
+	def _read_production_line(self, line):
+		rule, productions_str = line.split("->", 1)
+		rule = rule.strip()
+		productions_str = productions_str.strip()
+		raw_rule_keys = rule.split(' ')
+		rule_keys = []
+		for key in raw_rule_keys:
+			if key.strip() is not "":
+				rule_keys.append(key.strip())
+		prod_lists = productions_str.split(',')
+		productions = []
+		for prod_list in prod_lists:
+			prod_list = prod_list.strip()
+			raw_prod_keys = prod_list.split(' ')
+			prod_keys = []
+			for key in raw_prod_keys:
+				if key.strip() is not "":
+					prod_keys.append(key.strip())
+			productions.append(prod_keys)
 		
 class ListReader(_LineReader):
 	def __init__(self, file):

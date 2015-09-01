@@ -365,6 +365,17 @@ class Animator(object):
 			newval = endval
 		return newval
 
+class ControlSchemeManager(object):
+	"""Handles dynamic key remapping for particular apps"""
+
+	def __init__(self):
+		self._current = None
+		self._schemes = dict()
+
+	def add_scheme(self, name, productions):
+		for keys, prods in rules:
+			
+
 class WheelManager(object):
 	"""The wheel being displayed."""
 
