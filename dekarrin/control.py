@@ -1,3 +1,4 @@
+import pygame, subprocess, os
 from pygame.locals import *
 
 class ControlSchemeManager(object):
@@ -17,6 +18,12 @@ class ControlSchemeManager(object):
 			for p in prods:
 				rule['productions'].append(_create_sequence_step(p))
 			self._schemes[name].append(rule)
+			
+	def remap_controls(self, name):
+		self._translator.start(self._schemes[name])
+		
+	def restore_controls(self):
+		self._translator.end()
 	
 	def _create_sequence_step(keys):
 		step = {'button': None, 'modifiers': list()}
@@ -41,6 +48,8 @@ class ControlSchemeManager(object):
 		
 class AutoHotKeyRemapper(object):
 	def __init__(self):
+		self._ahk_command = "AutoHotKey.exe"
+		self._ahk_proc = None
 		# note: buttons that cannot be reproduced without mod keys are not used
 		button_map = {
 			K_BACKSPACE:	'Backspace',
@@ -166,6 +175,23 @@ class AutoHotKeyRemapper(object):
 		self._buttons = buttons_map
 		self._modifiers = modifier_map
 		
-	def output_rules(self, rules):
+	def start(self, rules):
 		with open('remapping.ahk', 'w') as map_file:
-			
+			for r in rules:
+				f.write(self._combo_to_ahk(r['key']) + "::\n")
+				for p in r['productions']:
+					f.write(self._combo_to_ahk(p) + "\n")
+				f.write("\n")
+		self._ahk_proc = subprocess.Popen([self._ahk_command, 'remapping.ahk'])
+		
+	def end(self):
+		self._ahk_proc.terminate()
+		os.remove('remapping.ahk')
+				
+	def _combo_to_ahk(self, key_combo):
+		ahk_str = ''
+		for m in key_combo['modifiers']:
+			ahk_str += self._modifiers[m]
+		ahk_str += self._buttons[key_combo['button']]
+		return ahk_str
+				
