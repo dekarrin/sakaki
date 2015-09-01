@@ -12,7 +12,7 @@
 #                                                                              #
 # The type of each value is determined automatically. Double quoting the value #
 # forces it to be read as a string. If there are no double quotes, the value   #
-# is checked to be an int, then a float. If the value is neither numberic      #
+# is checked to be an int, then a float. If the value is neither numeric       #
 # format, it is read as a string.                                              #
 ################################################################################
 
@@ -27,6 +27,7 @@ key_bindings = "bindings.cfg"
 idle_timeout = 5000
 wheels_dir = "wheels"
 items_dir = "items"
+controls_dir = "controls"
 
 root_wheel_id = "_MAIN_"
 
