@@ -50,11 +50,11 @@ class SakakiLauncher(object):
 		self._wheel = WheelManager(item_data, wheel_data, config['root_wheel_id'])
 		back_img = pygame.image.load(config['background'])
 		self.background_surf = pygame.transform.scale(back_img, resolution)
+		self._wheel_y_offset = 0
+		self._anim = Animator()
 		self.blur_surf = pygame.Surface(resolution)
 		self.blur_surf.fill(COLOR_GRAY)
 		self.blur_surf.set_alpha(180)
-		self._wheel_y_offset = 0
-		self._anim = Animator()
 		self._app_process = None
 		self._app_name = None
 		self.is_active = True
@@ -99,8 +99,11 @@ class SakakiLauncher(object):
 				if event.state & pygame.APPINPUTFOCUS:
 					self.is_active = bool(event.gain)
 					if self.is_active:
+						self.idle_timer = pygame.time.get_ticks()
+						self._anim.resume()
 						self.switch_display_to_configured()
 					else:
+						self._anim.suspend()
 						self.update()
 			elif event.type == QUIT:
 			# check quit last so exit is not followed by pygame calls
@@ -291,6 +294,19 @@ class Animator(object):
 	"""Lets us add tweening to properties."""
 	def __init__(self):
 		self._animations = []
+		self._suspend_time = None
+		self._is_suspended = False
+
+	def suspend(self):
+		self._suspend_time = pygame.time.get_ticks()
+		self._is_suspended = True
+
+	def resume(self):
+		time_diff = pygame.time.get_ticks() - self._suspend_time
+		for anim in self._animations:
+			# shift the start time so animations do not show a time jump
+			anim['start_time'] += time_diff
+		self._is_suspended = False
 		
 	def add_animation(self, time, target, prop, end, delta_hook=None, end_hook=None):
 		"""Start animating a property of an object.
@@ -325,21 +341,22 @@ class Animator(object):
 		
 	def pulse(self):
 		"""Execute all animations."""
-		active_anims = []
-		for anim in self._animations:
-			time = pygame.time.get_ticks() - anim['start_time']
-			progress = time / float(anim['duration'])
-			start_val = anim['start']
-			current_val = getattr(anim['target'], anim['prop'])
-			end_val = anim['end']
-			new_val = anim['delta_hook'](start_val, current_val, end_val, progress)
-			setattr(anim['target'], anim['prop'], new_val)
-			if new_val == end_val:
-				if anim['end_hook'] is not None:
-					anim['end_hook']()
-			else:
-				active_anims.append(anim)
-		self._animations = active_anims
+		if not self._is_suspended:
+			active_anims = []
+			for anim in self._animations:
+				time = pygame.time.get_ticks() - anim['start_time']
+				progress = time / float(anim['duration'])
+				start_val = anim['start']
+				current_val = getattr(anim['target'], anim['prop'])
+				end_val = anim['end']
+				new_val = anim['delta_hook'](start_val, current_val, end_val, progress)
+				setattr(anim['target'], anim['prop'], new_val)
+				if new_val == end_val:
+					if anim['end_hook'] is not None:
+						anim['end_hook']()
+				else:
+					active_anims.append(anim)
+			self._animations = active_anims
 		
 	def _numeric_linear_tween(self, startval, curval, endval, progress):
 		d = endval - startval
