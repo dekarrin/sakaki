@@ -1,4 +1,8 @@
-#os.environ['SDL_VIDEODRIVER'] = 'windib'
+import os
+import shutil
+
+if os.name is "nt":
+	os.environ['SDL_VIDEODRIVER'] = 'windib'
 
 import pygame, sys, subprocess
 from pygame.locals import *
@@ -6,12 +10,13 @@ from pygame.locals import *
 import dekarrin.file.lines
 
 import json
-import os
 
-CONFIG_FILE = 'sakaki.cfg'
+CONFIG_FILE = 'launcher.cfg'
+DEFAULTS_CONFIG_FILE = CONFIG_FILE + '.default'
 
 M_CONTROL = 0
 M_VIDEO = 1
+M_APP = 2
 
 E_MOVIECOMPLETE = 1
 
@@ -44,12 +49,15 @@ class SakakiLauncher(object):
 		self.background_surf = pygame.transform.scale(back_img, resolution)
 		self._wheel_y_offset = 0
 		self._anim = Animator()
+		self._app_process = None
+		self._app_name = None
 
 	def start(self):
 		while self.running:
 			self.update()
-			# poll after update so quit causes exit before next update
-			self.poll_events()
+			if self.game_mode != M_APP:
+				# poll after update so quit causes exit before next update
+				self.poll_events()
 
 	def poll_events(self):
 		for event in pygame.event.get():
@@ -71,7 +79,9 @@ class SakakiLauncher(object):
 				elif event.key == self.binder.key_for('WHEEL_ADVANCE'):
 					cmd = self._wheel.get_command()
 					if cmd is not None:
-						subprocess.call(cmd)
+						self._app_name = cmd.split(" ")[0]
+						self._app_process = subprocess.Popen(cmd.split(" "))
+						self.game_mode = M_APP
 					else:
 						self._wheel.advance()
 				elif event.key == self.binder.key_for('WHEEL_BACK'):
@@ -79,7 +89,7 @@ class SakakiLauncher(object):
 			elif event.type == QUIT:
 			# check quit last so exit is not followed by pygame calls
 				self.exit()
-				
+
 	def _handle_user_event(self, event):
 		if event.code == E_MOVIECOMPLETE:
 			self.exit_movie_mode()
@@ -87,7 +97,7 @@ class SakakiLauncher(object):
 	def update(self):
 		if self.game_mode == M_CONTROL:
 			self._anim.pulse()
-			self.draw_screen()
+			self.draw_wheel_screen()
 			if pygame.time.get_ticks() - self.idle_timer >= self.idle_timeout:
 				self.start_movie()
 				self.game_mode = M_VIDEO
@@ -98,8 +108,16 @@ class SakakiLauncher(object):
 		elif self.game_mode == M_VIDEO:
 			if not self.gui_movie.get_busy():
 				pygame.event.post(pygame.event.Event(USEREVENT, code=E_MOVIECOMPLETE))
+		elif self.game_mode == M_APP:
+			self.draw_app_screen()
+			pygame.display.flip()
+			self.clock.tick(30)
 
-	def draw_screen(self):
+	def draw_app_screen(self):
+		self.draw_backdrop()
+		self.draw_message("Close program '" + self._app_name + "' to resume launcher")
+
+	def draw_wheel_screen(self):
 		self.draw_backdrop()
 		self.draw_background()
 		self.draw_preview()
@@ -399,6 +417,9 @@ class WheelManager(object):
 			return self._current['items'][pos]['title']
 		else:
 			return None
+
+if not os.path.isfile(CONFIG_FILE):
+	shutil.copyfile(DEFAULTS_CONFIG_FILE, CONFIG_FILE)
 
 config_reader = dekarrin.file.lines.ConfigReader(CONFIG_FILE)
 config = config_reader.read()

@@ -18,7 +18,7 @@
 
 resolution_width = 640
 resolution_height = 480
-fullscreen = "Off"
+fullscreen = "On"
 
 background = "background.jpg"
 
