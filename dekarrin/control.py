@@ -195,7 +195,7 @@ class AutoHotKeyRemapper(object):
 						map_file.write("Send {" + self._combo_to_ahk(p) + "}\n")
 					map_file.write("Return\n")
 				else:
-					map_file.write(self._combo_to_ahk(r['productions'][0] + "\n")
+					map_file.write(self._combo_to_ahk(r['productions'][0]) + "\n")
 				map_file.write("\n")
 		self._ahk_proc = subprocess.Popen([self._ahk_command, 'remapping.ahk'])
 		
