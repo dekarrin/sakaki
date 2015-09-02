@@ -1,6 +1,5 @@
 import pygame, subprocess, os, psutil
 from pygame.locals import *
-import pprint
 
 class ControlSchemeManager(object):
 	"""Handles dynamic key remapping for particular apps"""
@@ -12,8 +11,6 @@ class ControlSchemeManager(object):
 		self._controls_remapped = False
 		for scheme in allSchemes:
 			self.add_scheme(scheme['attributes']['name'], scheme['rules'])
-		for s in self._schemes:
-			self._translator.start(self._schemes[s])
 
 	def add_scheme(self, name, rules):
 		self._schemes[name] = []
@@ -190,11 +187,17 @@ class AutoHotKeyRemapper(object):
 	def start(self, rules):
 		with open('remapping.ahk', 'w') as map_file:
 			for r in rules:
-				map_file.write(self._combo_to_ahk(r['key']) + "::\n")
-				for p in r['productions']:
-					map_file.write("Send {" + self._combo_to_ahk(p) + "}\n")
-				map_file.write("Return\n\n")
-		#self._ahk_proc = subprocess.Popen([self._ahk_command, 'remapping.ahk'])
+				map_file.write(self._combo_to_ahk(r['key']) + "::")
+				if len(r['productions']) > 1:
+					# combo remap; need compound command
+					map_file.write("\n")
+					for p in r['productions']:
+						map_file.write("Send {" + self._combo_to_ahk(p) + "}\n")
+					map_file.write("Return\n")
+				else:
+					map_file.write(self._combo_to_ahk(r['productions'][0] + "\n")
+				map_file.write("\n")
+		self._ahk_proc = subprocess.Popen([self._ahk_command, 'remapping.ahk'])
 		
 	def end(self):
 		self._kill_ahk()
