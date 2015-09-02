@@ -94,7 +94,13 @@ class SakakiLauncher(object):
 					self._scheme_manager.remap_controls(scheme)
 					self.switch_display_to_windowed()
 					self._app_name = cmd.split(" ")[0]
+					cmd_dir = self._wheel.get_command_dir()
+					old_path = os.getcwd()
+					if cmd_dir is not None:
+						os.chdir(cmd_dir)
 					self._app_process = subprocess.Popen(cmd.split(" "), shell=True)
+					if cmd_dir is not None:
+						os.chdir(old_path)
 				else:
 					self._wheel.advance()
 			elif event.key == self.binder.key_for('WHEEL_BACK'):
@@ -402,6 +408,8 @@ class WheelManager(object):
 				item['type'] = 'item'
 				if 'control_scheme' not in item:
 					item['control_scheme'] = None
+				if 'command_dir' not in item:
+					item['command_dir'] = None
 				self._wheels[wheel_id]['items'].append(item)
 				to_remove.append(item)
 		for item in to_remove:
@@ -451,6 +459,14 @@ class WheelManager(object):
 		if self.subitems_count() > 0:
 			if self._current['items'][self._position]['type'] == 'item':
 				cmd = self._current['items'][self._position]['command']
+		return cmd
+
+	def get_command_dir(self):
+		
+		cmd = None
+		if self.subitems_count() > 0:
+			if self._current['items'][self._position]['type'] == 'item':
+				cmd = self._current['items'][self._position]['command_dir']
 		return cmd
 
 	def get_control_scheme(self):

@@ -3,6 +3,7 @@
 {
 	"title": "Launch Gedit!",
 	"command": "gedit",
+	"command_dir": ".",
 	"parent": "wheel-1"
 }
 
