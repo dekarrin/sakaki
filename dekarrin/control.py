@@ -1,5 +1,6 @@
-import pygame, subprocess, os
+import pygame, subprocess, os, psutil
 from pygame.locals import *
+import pprint
 
 class ControlSchemeManager(object):
 	"""Handles dynamic key remapping for particular apps"""
@@ -11,6 +12,8 @@ class ControlSchemeManager(object):
 		self._controls_remapped = False
 		for scheme in allSchemes:
 			self.add_scheme(scheme['attributes']['name'], scheme['rules'])
+		for s in self._schemes:
+			self._translator.start(self._schemes[s])
 
 	def add_scheme(self, name, rules):
 		self._schemes[name] = []
@@ -57,8 +60,8 @@ class ControlSchemeManager(object):
 		
 class AutoHotKeyRemapper(object):
 	def __init__(self):
-		self._ahk_command = "AutoHotKey.exe"
-		self._ahk_proc = None
+		self._kill_ahk()
+		self._ahk_command = "C:\Program Files\AutoHotkey\AutoHotkey.exe"
 		# note: buttons that cannot be reproduced without mod keys are not used
 		button_map = {
 			K_BACKSPACE:	'Backspace',
@@ -171,8 +174,8 @@ class AutoHotKeyRemapper(object):
 			K_MENU:			'AppsKey'
 		}
 		modifier_map = {
-			KMOD_LSHIFT:	'<+',
-			KMOD_RSHIFT:	'>+',
+			KMOD_LSHIFT:		'<+',
+			KMOD_RSHIFT:		'>+',
 			KMOD_SHIFT:		'+',
 			KMOD_LCTRL:		'<^',
 			KMOD_RCTRL:		'>^',
@@ -187,14 +190,14 @@ class AutoHotKeyRemapper(object):
 	def start(self, rules):
 		with open('remapping.ahk', 'w') as map_file:
 			for r in rules:
-				f.write(self._combo_to_ahk(r['key']) + "::\n")
+				map_file.write(self._combo_to_ahk(r['key']) + "::\n")
 				for p in r['productions']:
-					f.write(self._combo_to_ahk(p) + "\n")
-				f.write("Return\n\n")
-		self._ahk_proc = subprocess.Popen([self._ahk_command, 'remapping.ahk'])
+					map_file.write("Send {" + self._combo_to_ahk(p) + "}\n")
+				map_file.write("Return\n\n")
+		#self._ahk_proc = subprocess.Popen([self._ahk_command, 'remapping.ahk'])
 		
 	def end(self):
-		self._ahk_proc.terminate()
+		self._kill_ahk()
 		os.remove('remapping.ahk')
 				
 	def _combo_to_ahk(self, key_combo):
@@ -203,4 +206,9 @@ class AutoHotKeyRemapper(object):
 			ahk_str += self._modifiers[m]
 		ahk_str += self._buttons[key_combo['button']]
 		return ahk_str
-				
+
+	def _kill_ahk(self):
+		for proc in psutil.process_iter():
+			if proc.name() == "AutoHotkey.exe":
+				proc.kill()
+
