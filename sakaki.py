@@ -91,7 +91,7 @@ class SakakiLauncher(object):
 				cmd = self._wheel.get_command()
 				if cmd is not None:
 					scheme = self._wheel.get_control_scheme()
-					self._scheme_manager.start(scheme)
+					self._scheme_manager.remap_controls(scheme)
 					self.switch_display_to_windowed()
 					self._app_name = cmd.split(" ")[0]
 					self._app_process = subprocess.Popen(cmd.split(" "), shell=True)
@@ -104,6 +104,7 @@ class SakakiLauncher(object):
 				self.is_active = bool(event.gain)
 				if self.is_active:
 					self.idle_timer = pygame.time.get_ticks()
+					self._scheme_manager.restore_controls()
 					self._anim.resume()
 					self.switch_display_to_configured()
 				else:
@@ -455,7 +456,7 @@ class WheelManager(object):
 	def get_control_scheme(self):
 		control_scheme = None
 		if self.subitems_count() > 0:
-			if self._current['items'][self._postion]['type'] == 'item':
+			if self._current['items'][self._position]['type'] == 'item':
 				control_scheme = self._current['items'][self._position]['control_scheme']
 		return control_scheme
 
